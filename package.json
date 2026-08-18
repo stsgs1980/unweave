@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "cli": "pnpm --filter @unweave/cli start",
+    "cli": "node packages/cli/src/index.js",
     "mcp": "pnpm --filter @unweave/mcp start",
     "prepare": "husky",
     "clean": "rm -rf node_modules packages/*/node_modules"

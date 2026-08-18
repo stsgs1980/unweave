@@ -6,7 +6,10 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
- *
+ * Регистрирует команду `pipeline` в CLI для полного цикла извлечения UI
+ * из одного или нескольких URL (extract -> analyze -> spec -> generate).
+ * Поддерживает опциональное сохранение референса и вывод файлов в директорию.
+ * @returns {void} Ничего не возвращает, регистрирует команду в program
  */
 export function registerPipelineCommand() {
   program
@@ -24,59 +27,110 @@ export function registerPipelineCommand() {
     )
     .option('-l, --learn <name>', 'Save as reference with given name')
     .option('-o, --output <dir>', 'Output directory')
-    .action(async (urls, options) => {
-      const spinner = ora('Running pipeline...').start();
+    .action(handlePipelineAction);
+}
 
-      try {
-        const results = await pipeline(urls, {
-          component: options.component,
-          componentType: options.type,
-          format: options.format,
-          typescript: options.ts,
-          screenshot: options.screenshot,
-          screenshotTypes: options.screenshotTypes.split(','),
-          learn: options.learn,
-        });
+/**
+ * Обработчик команды pipeline. Запускает полный цикл и выводит результат в консоль.
+ * @param {string[]} urls - Список URL для обработки
+ * @param {Object} options - Опции команды от commander
+ * @param {string} [options.component] - Имя компонента для spec
+ * @param {string} [options.type] - Тип компонента
+ * @param {string} [options.format] - Формат вывода (react, vue, html)
+ * @param {boolean} [options.ts] - Использовать TypeScript
+ * @param {boolean} [options.screenshot] - Делать скриншоты
+ * @param {string} options.screenshotTypes - Типы скриншотов через запятую
+ * @param {string} [options.learn] - Имя для сохранения референса
+ * @param {string} [options.output] - Директория для сохранения файлов
+ * @returns {Promise<void>} Promise, разрешающийся после завершения
+ */
+async function handlePipelineAction(urls, options) {
+  const spinner = ora('Running pipeline...').start();
 
-        spinner.succeed('Pipeline completed');
-
-        // Save output if requested
-        if (options.output) {
-          await fs.mkdir(options.output, { recursive: true });
-          for (const result of results) {
-            if (result.generated) {
-              for (const [filename, content] of Object.entries(result.generated)) {
-                await fs.writeFile(path.join(options.output, filename), content);
-              }
-            }
-          }
-          console.log(chalk.green(`Output saved to ${options.output}`));
-        }
-
-        // Print summary
-        for (const result of results) {
-          console.log(chalk.cyan(`\n--- ${result.url} ---`));
-          if (result.success) {
-            console.log(chalk.green('[OK] Success'));
-            if (result.analysis?.stats) {
-              console.log(`  Elements: ${result.analysis.stats.totalElements}`);
-              console.log(`  Colors: ${result.analysis.stats.uniqueColors}`);
-              console.log(`  Spacing: ${result.analysis.stats.uniqueSpacing}`);
-            }
-            if (result.generated) {
-              console.log(chalk.green(`  Generated: ${Object.keys(result.generated).join(', ')}`));
-            }
-            if (result.reference) {
-              console.log(chalk.green(`  Reference saved: ${result.reference}`));
-            }
-          } else {
-            console.log(chalk.red('[FAIL] Failed: ${result.error}'));
-          }
-        }
-      } catch (error) {
-        spinner.fail('Pipeline failed');
-        console.error(chalk.red(error.message));
-        process.exit(1);
-      }
+  try {
+    const results = await pipeline(urls, {
+      component: options.component,
+      componentType: options.type,
+      format: options.format,
+      typescript: options.ts,
+      screenshot: options.screenshot,
+      screenshotTypes: options.screenshotTypes.split(','),
+      learn: options.learn,
     });
+
+    spinner.succeed('Pipeline completed');
+
+    if (options.output) {
+      await saveGeneratedOutput(results, options.output);
+    }
+
+    printSummary(results);
+  } catch (error) {
+    spinner.fail('Pipeline failed');
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(chalk.red(message));
+    process.exit(1);
+  }
+}
+
+/**
+ * Сохраняет сгенерированные файлы в указанную директорию.
+ * @param {Array<Object>} results - Результаты пайплайна
+ * @param {string} outputDir - Путь к директории для сохранения
+ * @returns {Promise<void>} Promise, разрешающийся после записи всех файлов
+ */
+async function saveGeneratedOutput(results, outputDir) {
+  await fs.mkdir(outputDir, { recursive: true });
+
+  for (const result of results) {
+    if (!result.generated) continue;
+
+    for (const [filename, content] of Object.entries(result.generated)) {
+      const filePath = path.join(outputDir, filename);
+      await fs.writeFile(filePath, content);
+    }
+  }
+
+  console.log(chalk.green(`Output saved to ${outputDir}`));
+}
+
+/**
+ * Выводит сводку результатов пайплайна по каждому URL.
+ * @param {Array<Object>} results - Результаты пайплайна
+ * @param {string} results[].url - URL обработанного сайта
+ * @param {boolean} results[].success - Успешность обработки
+ * @param {string} [results[].error] - Сообщение об ошибке (если success === false)
+ * @param {Object} [results[].analysis] - Результат анализа
+ * @param {Object} [results[].analysis.stats] - Статистика анализа
+ * @param {Object} [results[].generated] - Сгенерированные файлы
+ * @param {string} [results[].reference] - Путь сохранённого референса
+ * @returns {void}
+ */
+function printSummary(results) {
+  for (const result of results) {
+    console.log(chalk.cyan(`\n--- ${result.url} ---`));
+
+    if (!result.success) {
+      console.log(chalk.red(`[FAIL] Failed: ${result.error}`));
+      continue;
+    }
+
+    console.log(chalk.green('[OK] Success'));
+
+    if (result.analysis?.stats) {
+      const { totalElements, uniqueColors, uniqueSpacing } = result.analysis.stats;
+      console.log(`  Elements: ${totalElements}`);
+      console.log(`  Colors: ${uniqueColors}`);
+      console.log(`  Spacing: ${uniqueSpacing}`);
+    }
+
+    if (result.generated) {
+      const names = Object.keys(result.generated).join(', ');
+      console.log(chalk.green(`  Generated: ${names}`));
+    }
+
+    if (result.reference) {
+      console.log(chalk.green(`  Reference saved: ${result.reference}`));
+    }
+  }
 }
