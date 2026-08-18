@@ -1,4 +1,15 @@
 /**
+ * Normalize className to string (handles SVGAnimatedString)
+ * @param {string|Object} className - Raw className from element
+ * @returns {string} Normalized string
+ */
+function normalizeClassName(className) {
+  if (!className) return '';
+  if (typeof className === 'string') return className;
+  return className.baseVal || String(className);
+}
+
+/**
  * Build CSS selector from element
  * @param {Object} el - Element
  * @returns {string} CSS selector
@@ -6,7 +17,7 @@
 export function buildSelector(el) {
   let selector = el.tagName.toLowerCase();
   if (el.id) selector += `#${el.id}`;
-  if (el.className) selector += `.${el.className.split(' ').join('.')}`;
+  if (el.className) selector += `.${normalizeClassName(el.className).split(' ').join('.')}`;
   return selector;
 }
 
@@ -17,7 +28,7 @@ export function buildSelector(el) {
  */
 export function inferComponentType(el) {
   const { tagName, className = '', attributes = {} } = el;
-  const cls = (className || '').toLowerCase();
+  const cls = normalizeClassName(className).toLowerCase();
   const role = attributes.role || '';
 
   // Button
@@ -93,7 +104,8 @@ export function classifyComponents(elements) {
   const seen = new Set();
 
   for (const el of elements) {
-    const key = `${el.tagName}.${el.className || ''}.${el.id || ''}`;
+    const cls = normalizeClassName(el.className);
+    const key = `${el.tagName}.${cls}.${el.id || ''}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -103,7 +115,7 @@ export function classifyComponents(elements) {
         selector: buildSelector(el),
         type,
         tagName: el.tagName,
-        className: el.className,
+        className: cls,
         id: el.id,
         styles: el.computedStyles,
       });
