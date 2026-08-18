@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from "playwright";
 
 /**
  * Extract UI data from a URL using Playwright
@@ -15,7 +15,7 @@ export async function extract(url, options = {}) {
   const page = await context.newPage();
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
+    await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
 
     // Wait for any additional settling
     if (options.waitFor) {
@@ -38,14 +38,14 @@ export async function extract(url, options = {}) {
         const variables = {};
         const styles = getComputedStyles(document.documentElement);
         for (const [key, value] of Object.entries(styles)) {
-          if (key.startsWith('--')) {
+          if (key.startsWith("--")) {
             variables[key] = value.trim();
           }
         }
         return variables;
       };
 
-      const extractElements = (selector = '*') => {
+      const extractElements = (selector = "*") => {
         const elements = document.querySelectorAll(selector);
         return Array.from(elements).map((el) => ({
           tagName: el.tagName.toLowerCase(),
@@ -89,20 +89,20 @@ export async function extract(url, options = {}) {
 
     // Screenshots if requested
     if (options.screenshot) {
-      const types = options.screenshotTypes || ['viewport'];
+      const types = options.screenshotTypes || ["viewport"];
       data.screenshots = {};
 
       for (const type of types) {
         switch (type) {
-          case 'full':
-            data.screenshots.full = await page.screenshot({ fullPage: true, type: 'png' });
+          case "full":
+            data.screenshots.full = await page.screenshot({ fullPage: true, type: "png" });
             break;
-          case 'viewport':
-            data.screenshots.viewport = await page.screenshot({ type: 'png' });
+          case "viewport":
+            data.screenshots.viewport = await page.screenshot({ type: "png" });
             break;
-          case 'mobile':
+          case "mobile":
             await page.setViewportSize({ width: 375, height: 667 });
-            data.screenshots.mobile = await page.screenshot({ type: 'png' });
+            data.screenshots.mobile = await page.screenshot({ type: "png" });
             break;
         }
       }

@@ -1,4 +1,4 @@
-import { generateCSS } from './generate-css.js';
+import { generateCSS } from "./generate-css.js";
 
 /**
  * Generate HTML component from specification
@@ -8,7 +8,7 @@ import { generateCSS } from './generate-css.js';
  */
 export function generateHTML(spec, _options) {
   const { name } = spec;
-  const componentName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const componentName = name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -17,7 +17,7 @@ export function generateHTML(spec, _options) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${name}</title>
   <style>
-${generateCSS(spec, 'html')}
+${generateCSS(spec, "html")}
   </style>
 </head>
 <body>
@@ -33,6 +33,6 @@ ${generateCSS(spec, 'html')}
 
   return {
     [`${componentName}.html`]: html,
-    [`${componentName}.css`]: generateCSS(spec, 'html'),
+    [`${componentName}.css`]: generateCSS(spec, "html"),
   };
 }

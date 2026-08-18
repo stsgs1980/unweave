@@ -1,5 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
+import fs from "fs/promises";
+import path from "path";
 
 /**
  * Save reference to catalog
@@ -8,7 +8,7 @@ import path from 'path';
  * @returns {Promise<string>} Saved reference path
  */
 export async function saveReference(name, data) {
-  const dir = path.join(process.cwd(), 'references');
+  const dir = path.join(process.cwd(), "references");
   await fs.mkdir(dir, { recursive: true });
 
   const filePath = path.join(dir, `${name}.json`);
@@ -23,10 +23,10 @@ export async function saveReference(name, data) {
  * @returns {Promise<Object|null>} Reference data or null
  */
 export async function loadReference(name) {
-  const filePath = path.join(process.cwd(), 'references', `${name}.json`);
+  const filePath = path.join(process.cwd(), "references", `${name}.json`);
 
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(filePath, "utf-8");
     return JSON.parse(content);
   } catch {
     return null;
@@ -38,11 +38,11 @@ export async function loadReference(name) {
  * @returns {Promise<string[]>} Reference names
  */
 export async function listReferences() {
-  const dir = path.join(process.cwd(), 'references');
+  const dir = path.join(process.cwd(), "references");
 
   try {
     const files = await fs.readdir(dir);
-    return files.filter((f) => f.endsWith('.json')).map((f) => f.replace('.json', ''));
+    return files.filter((f) => f.endsWith(".json")).map((f) => f.replace(".json", ""));
   } catch {
     return [];
   }

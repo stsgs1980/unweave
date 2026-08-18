@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@unweave/core'],
+  transpilePackages: ["@unweave/core"],
 };
 
 export default nextConfig;

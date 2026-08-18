@@ -5,7 +5,7 @@
  */
 export function generateStorybook(spec) {
   const { name } = spec;
-  const componentName = name.replace(/[^a-zA-Z0-9]/g, '');
+  const componentName = name.replace(/[^a-zA-Z0-9]/g, "");
 
   return `import type { Meta, StoryObj } from '@storybook/react';
 import { ${componentName} } from './${componentName}';

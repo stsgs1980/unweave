@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { program } from 'commander';
+import { program } from "commander";
 import {
   registerPipelineCommand,
   registerExtractCommand,
@@ -11,7 +11,7 @@ import {
   registerGenerateRefCommand,
   registerScreenshotCommand,
   registerCompareCommand,
-} from './commands/index.js';
+} from "./commands/index.js";
 
 // Register all commands
 registerPipelineCommand();

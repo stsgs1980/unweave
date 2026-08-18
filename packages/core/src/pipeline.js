@@ -1,9 +1,9 @@
-import { extract } from './extract.js';
-import { analyze } from './analyze.js';
-import { generateSpec } from './spec.js';
-import { generate } from './generate.js';
-import { saveReference, loadReference } from './references.js';
-import { compare } from './compare.js';
+import { extract } from "./extract.js";
+import { analyze } from "./analyze.js";
+import { generateSpec } from "./spec.js";
+import { generate } from "./generate.js";
+import { saveReference, loadReference } from "./references.js";
+import { compare } from "./compare.js";
 
 /**
  * Full pipeline: extract -> analyze -> spec -> generate
@@ -29,7 +29,7 @@ export async function pipeline(urls, options = {}) {
       console.log(`[pipeline] Processing: ${url}`);
 
       // Step 1: Extract
-      console.log('[pipeline] Extracting...');
+      console.log("[pipeline] Extracting...");
       const extracted = await extract(url, {
         screenshot: options.screenshot,
         screenshotTypes: options.screenshotTypes,
@@ -38,13 +38,13 @@ export async function pipeline(urls, options = {}) {
       });
 
       // Step 2: Analyze
-      console.log('[pipeline] Analyzing...');
+      console.log("[pipeline] Analyzing...");
       const analysis = analyze(extracted);
 
       // Step 3: Generate spec (if component specified)
       let spec = null;
       if (options.component) {
-        console.log('[pipeline] Generating spec...');
+        console.log("[pipeline] Generating spec...");
         spec = generateSpec(analysis, {
           componentName: options.component,
           componentType: options.componentType || inferComponentType(options.component),
@@ -55,7 +55,7 @@ export async function pipeline(urls, options = {}) {
       // Step 4: Generate code (if format specified)
       let generated = null;
       if (options.format && spec) {
-        console.log('[pipeline] Generating code...');
+        console.log("[pipeline] Generating code...");
         generated = generate(spec, {
           format: options.format,
           typescript: options.typescript,
@@ -65,7 +65,7 @@ export async function pipeline(urls, options = {}) {
       // Step 5: Save to reference catalog (if learn option)
       let reference = null;
       if (options.learn) {
-        console.log('[pipeline] Learning reference...');
+        console.log("[pipeline] Learning reference...");
         reference = await saveReference(options.learn, {
           url,
           extracted,
@@ -131,12 +131,12 @@ export async function pipelineFromReference(referenceName, options = {}) {
  */
 function inferComponentType(name) {
   const lower = name.toLowerCase();
-  if (lower.includes('btn') || lower.includes('button')) return 'button';
-  if (lower.includes('input') || lower.includes('field')) return 'input';
-  if (lower.includes('card')) return 'card';
-  if (lower.includes('modal') || lower.includes('dialog')) return 'modal';
-  if (lower.includes('nav') || lower.includes('menu')) return 'navigation';
-  return 'generic';
+  if (lower.includes("btn") || lower.includes("button")) return "button";
+  if (lower.includes("input") || lower.includes("field")) return "input";
+  if (lower.includes("card")) return "card";
+  if (lower.includes("modal") || lower.includes("dialog")) return "modal";
+  if (lower.includes("nav") || lower.includes("menu")) return "navigation";
+  return "generic";
 }
 
 // Re-export for backward compatibility

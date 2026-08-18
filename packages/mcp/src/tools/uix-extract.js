@@ -1,20 +1,20 @@
-import { extract } from '@unweave/core';
+import { extract } from "@unweave/core";
 
 export const uixExtractTool = {
-  name: 'uix_extract',
-  description: 'Extract UI data from URL (DOM, styles, CSS variables, screenshots)',
+  name: "uix_extract",
+  description: "Extract UI data from URL (DOM, styles, CSS variables, screenshots)",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      url: { type: 'string', description: 'URL to extract from' },
-      screenshot: { type: 'boolean', default: false },
-      screenshotTypes: { type: 'array', items: { type: 'string' }, default: ['viewport'] },
+      url: { type: "string", description: "URL to extract from" },
+      screenshot: { type: "boolean", default: false },
+      screenshotTypes: { type: "array", items: { type: "string" }, default: ["viewport"] },
       viewport: {
-        type: 'object',
-        properties: { width: { type: 'number' }, height: { type: 'number' } },
+        type: "object",
+        properties: { width: { type: "number" }, height: { type: "number" } },
       },
     },
-    required: ['url'],
+    required: ["url"],
   },
   handler: async (args) => {
     const data = await extract(args.url, {
@@ -22,6 +22,6 @@ export const uixExtractTool = {
       screenshotTypes: args.screenshotTypes,
       viewport: args.viewport,
     });
-    return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   },
 };

@@ -17,13 +17,13 @@ export function extractTypography(elements) {
   for (const el of elements) {
     const styles = el.computedStyles || {};
 
-    const family = styles['font-family'];
+    const family = styles["font-family"];
     if (family && !fontSeen.has(family)) {
       fontSeen.add(family);
       typography.fonts.push(family);
     }
 
-    const size = styles['font-size'];
+    const size = styles["font-size"];
     if (size && /^\d+(\.\d+)?(px|rem|em|%)$/.test(size)) {
       const num = parseFloat(size);
       if (!sizeSeen.has(num)) {
@@ -32,14 +32,14 @@ export function extractTypography(elements) {
       }
     }
 
-    const weight = styles['font-weight'];
+    const weight = styles["font-weight"];
     if (weight && !weightSeen.has(weight)) {
       weightSeen.add(weight);
       typography.fontWeights.push(weight);
     }
 
-    const lh = styles['line-height'];
-    if (lh && lh !== 'normal' && !lhSeen.has(lh)) {
+    const lh = styles["line-height"];
+    if (lh && lh !== "normal" && !lhSeen.has(lh)) {
       lhSeen.add(lh);
       typography.lineHeights.push(lh);
     }

@@ -1,5 +1,5 @@
-import { extractMultiple } from './extract.js';
-import { analyze } from './analyze.js';
+import { extractMultiple } from "./extract.js";
+import { analyze } from "./analyze.js";
 
 /**
  * Compare two URLs
@@ -27,7 +27,7 @@ export async function compare(url1, url2) {
  * @returns {Object} Design system diff
  */
 function diffDesignSystems(ds1, ds2) {
-  if (!ds1 || !ds2) return { error: 'Missing design system data' };
+  if (!ds1 || !ds2) return { error: "Missing design system data" };
 
   return {
     colors: diffArrays(ds1.colors?.all || [], ds2.colors?.all || []),

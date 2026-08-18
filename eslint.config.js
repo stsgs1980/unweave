@@ -1,5 +1,5 @@
 import jsdoc from "eslint-plugin-jsdoc";
-import markdown from "eslint-plugin-markdown";
+import markdown from "@eslint/markdown";
 import tsParser from "@typescript-eslint/parser";
 import unicodePolicy from "./eslint-rules/unicode-policy.js";
 import codeBlockLanguage from "./eslint-rules/code-block-language.js";

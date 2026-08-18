@@ -1,6 +1,6 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   uixPipelineTool,
   uixExtractTool,
@@ -11,12 +11,12 @@ import {
   uixReferencesTool,
   uixGenerateFromReferenceTool,
   uixCompareTool,
-} from './tools/index.js';
+} from "./tools/index.js";
 
 const server = new Server(
   {
-    name: 'ui-extractor',
-    version: '0.1.0',
+    name: "ui-extractor",
+    version: "0.1.0",
   },
   {
     capabilities: {
@@ -59,7 +59,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return await tool.handler(args);
   } catch (error) {
     return {
-      content: [{ type: 'text', text: `Error: ${error.message}` }],
+      content: [{ type: "text", text: `Error: ${error.message}` }],
       isError: true,
     };
   }
@@ -71,10 +71,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('UI Extractor MCP server running on stdio');
+  console.error("UI Extractor MCP server running on stdio");
 }
 
 main().catch((error) => {
-  console.error('Server error:', error);
+  console.error("Server error:", error);
   process.exit(1);
 });

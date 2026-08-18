@@ -1,9 +1,9 @@
-import { extractColors } from './analyze/analyze-colors.js';
-import { extractSpacing } from './analyze/analyze-spacing.js';
-import { extractRadius } from './analyze/analyze-radius.js';
-import { extractTypography } from './analyze/analyze-typography.js';
-import { classifyComponents } from './analyze/analyze-components.js';
-import { detectPatterns } from './analyze/analyze-patterns.js';
+import { extractColors } from "./analyze/analyze-colors.js";
+import { extractSpacing } from "./analyze/analyze-spacing.js";
+import { extractRadius } from "./analyze/analyze-radius.js";
+import { extractTypography } from "./analyze/analyze-typography.js";
+import { classifyComponents } from "./analyze/analyze-components.js";
+import { detectPatterns } from "./analyze/analyze-patterns.js";
 
 /**
  * Analyze extracted UI data to detect patterns and design system
@@ -12,7 +12,7 @@ import { detectPatterns } from './analyze/analyze-patterns.js';
  */
 export function analyze(extractedData) {
   if (!extractedData || extractedData.error) {
-    return { error: extractedData?.error || 'Invalid extracted data' };
+    return { error: extractedData?.error || "Invalid extracted data" };
   }
 
   const elements = extractedData.elements || [];
@@ -53,13 +53,13 @@ export function analyze(extractedData) {
 }
 
 // Re-export utilities
-export { extractColors } from './analyze/analyze-colors.js';
-export { extractSpacing } from './analyze/analyze-spacing.js';
-export { extractRadius } from './analyze/analyze-radius.js';
-export { extractTypography } from './analyze/analyze-typography.js';
+export { extractColors } from "./analyze/analyze-colors.js";
+export { extractSpacing } from "./analyze/analyze-spacing.js";
+export { extractRadius } from "./analyze/analyze-radius.js";
+export { extractTypography } from "./analyze/analyze-typography.js";
 export {
   classifyComponents,
   buildSelector,
   inferComponentType,
-} from './analyze/analyze-components.js';
-export { detectPatterns } from './analyze/analyze-patterns.js';
+} from "./analyze/analyze-components.js";
+export { detectPatterns } from "./analyze/analyze-patterns.js";

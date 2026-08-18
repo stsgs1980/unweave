@@ -45,7 +45,7 @@ export function addColor(arr, value, seen) {
  * @returns {Object} Color analysis
  */
 export function extractColors(elements, cssVariables) {
-  const colorProps = ['color', 'background-color', 'border-color', 'fill', 'stroke'];
+  const colorProps = ["color", "background-color", "border-color", "fill", "stroke"];
   const colors = { all: [], backgrounds: [], text: [], borders: [], cssVariables: {} };
   const seen = new Set();
 
@@ -64,9 +64,9 @@ export function extractColors(elements, cssVariables) {
       const value = styles[prop];
       if (value && isColor(value)) {
         addColor(colors.all, value, seen);
-        if (prop === 'background-color') addColor(colors.backgrounds, value, seen);
-        if (prop === 'color') addColor(colors.text, value, seen);
-        if (prop === 'border-color') addColor(colors.borders, value, seen);
+        if (prop === "background-color") addColor(colors.backgrounds, value, seen);
+        if (prop === "color") addColor(colors.text, value, seen);
+        if (prop === "border-color") addColor(colors.borders, value, seen);
       }
     }
   }

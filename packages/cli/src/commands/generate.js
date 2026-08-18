@@ -1,24 +1,24 @@
-import { program } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import { extract, analyze, generateSpec, generate } from '@unweave/core';
-import fs from 'fs/promises';
-import path from 'path';
+import { program } from "commander";
+import chalk from "chalk";
+import ora from "ora";
+import { extract, analyze, generateSpec, generate } from "@unweave/core";
+import fs from "fs/promises";
+import path from "path";
 
 /**
  *
  */
 export function registerGenerateCommand() {
   program
-    .command('generate <url>')
-    .description('Generate component code from URL')
-    .requiredOption('-c, --component <name>', 'Component name')
-    .requiredOption('-f, --format <format>', 'Output format (react, vue, html)')
-    .option('-t, --type <type>', 'Component type')
-    .option('--ts', 'Use TypeScript', true)
-    .option('-o, --output <dir>', 'Output directory')
+    .command("generate <url>")
+    .description("Generate component code from URL")
+    .requiredOption("-c, --component <name>", "Component name")
+    .requiredOption("-f, --format <format>", "Output format (react, vue, html)")
+    .option("-t, --type <type>", "Component type")
+    .option("--ts", "Use TypeScript", true)
+    .option("-o, --output <dir>", "Output directory")
     .action(async (url, options) => {
-      const spinner = ora('Generating code...').start();
+      const spinner = ora("Generating code...").start();
 
       try {
         const extracted = await extract(url);
@@ -33,7 +33,7 @@ export function registerGenerateCommand() {
           typescript: options.ts,
         });
 
-        spinner.succeed('Code generated');
+        spinner.succeed("Code generated");
 
         if (options.output) {
           await fs.mkdir(options.output, { recursive: true });
@@ -48,7 +48,7 @@ export function registerGenerateCommand() {
           }
         }
       } catch (error) {
-        spinner.fail('Code generation failed');
+        spinner.fail("Code generation failed");
         console.error(chalk.red(error.message));
         process.exit(1);
       }

@@ -4,8 +4,8 @@
  * @returns {string} Normalized string
  */
 function normalizeClassName(className) {
-  if (!className) return '';
-  if (typeof className === 'string') return className;
+  if (!className) return "";
+  if (typeof className === "string") return className;
   return className.baseVal || String(className);
 }
 
@@ -17,7 +17,7 @@ function normalizeClassName(className) {
 export function buildSelector(el) {
   let selector = el.tagName.toLowerCase();
   if (el.id) selector += `#${el.id}`;
-  if (el.className) selector += `.${normalizeClassName(el.className).split(' ').join('.')}`;
+  if (el.className) selector += `.${normalizeClassName(el.className).split(" ").join(".")}`;
   return selector;
 }
 
@@ -27,71 +27,71 @@ export function buildSelector(el) {
  * @returns {string} Component type
  */
 export function inferComponentType(el) {
-  const { tagName, className = '', attributes = {} } = el;
+  const { tagName, className = "", attributes = {} } = el;
   const cls = normalizeClassName(className).toLowerCase();
-  const role = attributes.role || '';
+  const role = attributes.role || "";
 
   // Button
-  if (tagName === 'button' || role === 'button' || cls.includes('btn') || cls.includes('button')) {
-    return 'button';
+  if (tagName === "button" || role === "button" || cls.includes("btn") || cls.includes("button")) {
+    return "button";
   }
 
   // Input
-  if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || role === 'textbox') {
-    return 'input';
+  if (tagName === "input" || tagName === "textarea" || tagName === "select" || role === "textbox") {
+    return "input";
   }
 
   // Card
-  if (cls.includes('card') || cls.includes('tile')) {
-    return 'card';
+  if (cls.includes("card") || cls.includes("tile")) {
+    return "card";
   }
 
   // Navigation
-  if (tagName === 'nav' || cls.includes('nav') || cls.includes('menu') || role === 'navigation') {
-    return 'navigation';
+  if (tagName === "nav" || cls.includes("nav") || cls.includes("menu") || role === "navigation") {
+    return "navigation";
   }
 
   // Modal/Dialog
   if (
-    role === 'dialog' ||
-    role === 'alertdialog' ||
-    cls.includes('modal') ||
-    cls.includes('dialog')
+    role === "dialog" ||
+    role === "alertdialog" ||
+    cls.includes("modal") ||
+    cls.includes("dialog")
   ) {
-    return 'modal';
+    return "modal";
   }
 
   // Table
-  if (tagName === 'table' || role === 'grid') {
-    return 'table';
+  if (tagName === "table" || role === "grid") {
+    return "table";
   }
 
   // List
-  if (tagName === 'ul' || tagName === 'ol' || role === 'list' || cls.includes('list')) {
-    return 'list';
+  if (tagName === "ul" || tagName === "ol" || role === "list" || cls.includes("list")) {
+    return "list";
   }
 
   // Heading
-  if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-    return 'heading';
+  if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(tagName)) {
+    return "heading";
   }
 
   // Image
-  if (tagName === 'img' || role === 'img') {
-    return 'image';
+  if (tagName === "img" || role === "img") {
+    return "image";
   }
 
   // Link
-  if (tagName === 'a' || role === 'link') {
-    return 'link';
+  if (tagName === "a" || role === "link") {
+    return "link";
   }
 
   // Form
-  if (tagName === 'form') {
-    return 'form';
+  if (tagName === "form") {
+    return "form";
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -105,12 +105,12 @@ export function classifyComponents(elements) {
 
   for (const el of elements) {
     const cls = normalizeClassName(el.className);
-    const key = `${el.tagName}.${cls}.${el.id || ''}`;
+    const key = `${el.tagName}.${cls}.${el.id || ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     const type = inferComponentType(el);
-    if (type !== 'unknown') {
+    if (type !== "unknown") {
       components.push({
         selector: buildSelector(el),
         type,

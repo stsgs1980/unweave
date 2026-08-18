@@ -1,6 +1,6 @@
-import { generateReact } from './generate-react.js';
-import { generateVue } from './generate-vue.js';
-import { generateHTML } from './generate-html.js';
+import { generateReact } from "./generate-react.js";
+import { generateVue } from "./generate-vue.js";
+import { generateHTML } from "./generate-html.js";
 
 /**
  * Generate component code from specification
@@ -10,22 +10,22 @@ import { generateHTML } from './generate-html.js';
  */
 export function generate(spec, options = {}) {
   if (!spec || spec.error) {
-    return { error: spec?.error || 'Invalid spec' };
+    return { error: spec?.error || "Invalid spec" };
   }
 
-  const format = options.format || 'react';
+  const format = options.format || "react";
 
   switch (format) {
-    case 'react':
+    case "react":
       return generateReact(spec, options);
-    case 'vue':
+    case "vue":
       return generateVue(spec, options);
-    case 'html':
+    case "html":
       return generateHTML(spec, options);
     default:
       return { error: `Unsupported format: ${format}` };
   }
 }
 
-export { generateCSS } from './generate-css.js';
-export { generateStorybook } from './generate-storybook.js';
+export { generateCSS } from "./generate-css.js";
+export { generateStorybook } from "./generate-storybook.js";

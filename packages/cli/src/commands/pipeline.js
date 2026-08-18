@@ -1,9 +1,9 @@
-import { program } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import { pipeline } from '@unweave/core';
-import fs from 'fs/promises';
-import path from 'path';
+import { program } from "commander";
+import chalk from "chalk";
+import ora from "ora";
+import { pipeline } from "@unweave/core";
+import fs from "fs/promises";
+import path from "path";
 
 /**
  * Регистрирует команду `pipeline` в CLI для полного цикла извлечения UI
@@ -13,20 +13,20 @@ import path from 'path';
  */
 export function registerPipelineCommand() {
   program
-    .command('pipeline <urls...>')
-    .description('Full pipeline: extract + analyze + spec + generate')
-    .option('-c, --component <name>', 'Component name to generate spec for')
-    .option('-t, --type <type>', 'Component type (button, input, card, modal, navigation)')
-    .option('-f, --format <format>', 'Output format (react, vue, html)')
-    .option('--ts', 'Use TypeScript', true)
-    .option('-s, --screenshot', 'Take screenshots')
+    .command("pipeline <urls...>")
+    .description("Full pipeline: extract + analyze + spec + generate")
+    .option("-c, --component <name>", "Component name to generate spec for")
+    .option("-t, --type <type>", "Component type (button, input, card, modal, navigation)")
+    .option("-f, --format <format>", "Output format (react, vue, html)")
+    .option("--ts", "Use TypeScript", true)
+    .option("-s, --screenshot", "Take screenshots")
     .option(
-      '--screenshot-types <types>',
-      'Screenshot types (full,viewport,mobile,sections,components)',
-      'viewport',
+      "--screenshot-types <types>",
+      "Screenshot types (full,viewport,mobile,sections,components)",
+      "viewport",
     )
-    .option('-l, --learn <name>', 'Save as reference with given name')
-    .option('-o, --output <dir>', 'Output directory')
+    .option("-l, --learn <name>", "Save as reference with given name")
+    .option("-o, --output <dir>", "Output directory")
     .action(handlePipelineAction);
 }
 
@@ -45,7 +45,7 @@ export function registerPipelineCommand() {
  * @returns {Promise<void>} Promise, разрешающийся после завершения
  */
 async function handlePipelineAction(urls, options) {
-  const spinner = ora('Running pipeline...').start();
+  const spinner = ora("Running pipeline...").start();
 
   try {
     const results = await pipeline(urls, {
@@ -54,11 +54,11 @@ async function handlePipelineAction(urls, options) {
       format: options.format,
       typescript: options.ts,
       screenshot: options.screenshot,
-      screenshotTypes: options.screenshotTypes.split(','),
+      screenshotTypes: options.screenshotTypes.split(","),
       learn: options.learn,
     });
 
-    spinner.succeed('Pipeline completed');
+    spinner.succeed("Pipeline completed");
 
     if (options.output) {
       await saveGeneratedOutput(results, options.output);
@@ -66,7 +66,7 @@ async function handlePipelineAction(urls, options) {
 
     printSummary(results);
   } catch (error) {
-    spinner.fail('Pipeline failed');
+    spinner.fail("Pipeline failed");
     const message = error instanceof Error ? error.message : String(error);
     console.error(chalk.red(message));
     process.exit(1);
@@ -115,7 +115,7 @@ function printSummary(results) {
       continue;
     }
 
-    console.log(chalk.green('[OK] Success'));
+    console.log(chalk.green("[OK] Success"));
 
     if (result.analysis?.stats) {
       const { totalElements, uniqueColors, uniqueSpacing } = result.analysis.stats;
@@ -125,7 +125,7 @@ function printSummary(results) {
     }
 
     if (result.generated) {
-      const names = Object.keys(result.generated).join(', ');
+      const names = Object.keys(result.generated).join(", ");
       console.log(chalk.green(`  Generated: ${names}`));
     }
 

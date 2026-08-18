@@ -10,30 +10,30 @@ export function generateVariants(designSystem, componentType) {
   const variants = {};
 
   // Generate variants based on design system tokens
-  if (componentType === 'button') {
+  if (componentType === "button") {
     variants.primary = {
-      description: 'Primary action',
-      tokens: { bg: colors.cssVariables?.['--color-primary'] || '#0066cc', color: '#fff' },
+      description: "Primary action",
+      tokens: { bg: colors.cssVariables?.["--color-primary"] || "#0066cc", color: "#fff" },
     };
     variants.secondary = {
-      description: 'Secondary action',
-      tokens: { bg: colors.cssVariables?.['--color-secondary'] || '#6c757d', color: '#fff' },
+      description: "Secondary action",
+      tokens: { bg: colors.cssVariables?.["--color-secondary"] || "#6c757d", color: "#fff" },
     };
     variants.outline = {
-      description: 'Outlined style',
+      description: "Outlined style",
       tokens: {
-        bg: 'transparent',
-        border: colors.cssVariables?.['--color-primary'] || '#0066cc',
-        color: colors.cssVariables?.['--color-primary'] || '#0066cc',
+        bg: "transparent",
+        border: colors.cssVariables?.["--color-primary"] || "#0066cc",
+        color: colors.cssVariables?.["--color-primary"] || "#0066cc",
       },
     };
     variants.ghost = {
-      description: 'Ghost style',
-      tokens: { bg: 'transparent', color: colors.cssVariables?.['--color-primary'] || '#0066cc' },
+      description: "Ghost style",
+      tokens: { bg: "transparent", color: colors.cssVariables?.["--color-primary"] || "#0066cc" },
     };
     variants.destructive = {
-      description: 'Destructive action',
-      tokens: { bg: colors.cssVariables?.['--color-danger'] || '#dc3545', color: '#fff' },
+      description: "Destructive action",
+      tokens: { bg: colors.cssVariables?.["--color-danger"] || "#dc3545", color: "#fff" },
     };
   }
 

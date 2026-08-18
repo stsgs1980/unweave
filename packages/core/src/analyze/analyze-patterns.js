@@ -21,12 +21,12 @@ export function detectPatterns(elements) {
   for (const el of elements) {
     const styles = el.computedStyles || {};
 
-    if (styles.display === 'flex' || styles.display === 'inline-flex') patterns.flexbox++;
-    if (styles.display === 'grid' || styles.display === 'inline-grid') patterns.grid++;
-    if (styles.position === 'absolute') patterns.absolutePositioning++;
-    if (styles.position === 'fixed') patterns.fixedPositioning++;
-    if (styles.animation && styles.animation !== 'none') patterns.animations++;
-    if (styles.transition && styles.transition !== 'none') patterns.transitions++;
+    if (styles.display === "flex" || styles.display === "inline-flex") patterns.flexbox++;
+    if (styles.display === "grid" || styles.display === "inline-grid") patterns.grid++;
+    if (styles.position === "absolute") patterns.absolutePositioning++;
+    if (styles.position === "fixed") patterns.fixedPositioning++;
+    if (styles.animation && styles.animation !== "none") patterns.animations++;
+    if (styles.transition && styles.transition !== "none") patterns.transitions++;
   }
 
   return patterns;

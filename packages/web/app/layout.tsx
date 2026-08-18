@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
 /**
  * Корневой layout для всего приложения.
@@ -18,6 +18,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
  * Метаданные приложения.
  */
 export const metadata: Metadata = {
-  title: 'Unweave',
-  description: 'Extract UI components from any website',
+  title: "Unweave",
+  description: "Extract UI components from any website",
 };

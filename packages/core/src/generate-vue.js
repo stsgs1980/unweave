@@ -1,4 +1,4 @@
-import { generateCSS } from './generate-css.js';
+import { generateCSS } from "./generate-css.js";
 
 /**
  * Generate Vue component from specification
@@ -8,17 +8,17 @@ import { generateCSS } from './generate-css.js';
  */
 export function generateVue(spec, _options) {
   const { name, props } = spec;
-  const componentName = name.replace(/[^a-zA-Z0-9]/g, '');
+  const componentName = name.replace(/[^a-zA-Z0-9]/g, "");
 
   const propDefinitions = Object.entries(props || {})
     .map(([key, config]) => {
       const type = getVueType(config);
-      const required = config.required ? ', required: true' : '';
+      const required = config.required ? ", required: true" : "";
       const defaultVal =
-        config.default !== undefined ? `, default: ${JSON.stringify(config.default)}` : '';
+        config.default !== undefined ? `, default: ${JSON.stringify(config.default)}` : "";
       return `  ${key}: { type: ${type}${required}${defaultVal} }`;
     })
-    .join(',\n');
+    .join(",\n");
 
   const template = `<template>
   <button
@@ -43,7 +43,7 @@ defineEmits(['click']);
 @import './${componentName}.css';
 </style>`;
 
-  const cssCode = generateCSS(spec, 'vue');
+  const cssCode = generateCSS(spec, "vue");
 
   return {
     [`${componentName}.vue`]: template,
@@ -58,19 +58,19 @@ defineEmits(['click']);
  */
 function getVueType(config) {
   switch (config.type) {
-    case 'string':
-      return 'String';
-    case 'number':
-      return 'Number';
-    case 'boolean':
-      return 'Boolean';
-    case 'function':
-      return 'Function';
-    case 'array':
-      return 'Array';
-    case 'object':
-      return 'Object';
+    case "string":
+      return "String";
+    case "number":
+      return "Number";
+    case "boolean":
+      return "Boolean";
+    case "function":
+      return "Function";
+    case "array":
+      return "Array";
+    case "object":
+      return "Object";
     default:
-      return 'String';
+      return "String";
   }
 }

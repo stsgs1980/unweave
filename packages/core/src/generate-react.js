@@ -1,5 +1,5 @@
-import { generateCSS } from './generate-css.js';
-import { generateStorybook } from './generate-storybook.js';
+import { generateCSS } from "./generate-css.js";
+import { generateStorybook } from "./generate-storybook.js";
 
 /**
  * Capitalize first letter of a string
@@ -7,7 +7,7 @@ import { generateStorybook } from './generate-storybook.js';
  * @returns {string} Capitalized string
  */
 function capitalize(str) {
-  if (!str) return '';
+  if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -17,10 +17,10 @@ function capitalize(str) {
  * @returns {string} kebab-case name
  */
 function toKebabCase(name) {
-  if (!name) return '';
+  if (!name) return "";
   return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/[^a-zA-Z0-9-]/g, '')
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^a-zA-Z0-9-]/g, "")
     .toLowerCase();
 }
 
@@ -31,7 +31,7 @@ function toKebabCase(name) {
  * @returns {string} camelCase name
  */
 function toCamelCase(name) {
-  if (name === 'data-testid') return 'dataTestId';
+  if (name === "data-testid") return "dataTestId";
   return name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
@@ -42,16 +42,16 @@ function toCamelCase(name) {
  */
 function mapPropType(specType) {
   const typeMap = {
-    string: 'string',
-    number: 'number',
-    boolean: 'boolean',
-    function: '() => void',
-    node: 'React.ReactNode',
-    element: 'React.ReactElement',
-    array: 'unknown[]',
-    object: 'Record<string, unknown>',
+    string: "string",
+    number: "number",
+    boolean: "boolean",
+    function: "() => void",
+    node: "React.ReactNode",
+    element: "React.ReactElement",
+    array: "unknown[]",
+    object: "Record<string, unknown>",
   };
-  return typeMap[specType.toLowerCase()] || 'unknown';
+  return typeMap[specType.toLowerCase()] || "unknown";
 }
 
 /**
@@ -60,8 +60,8 @@ function mapPropType(specType) {
  * @returns {string} Destructuring string for function parameters
  */
 function buildDestructuring(props) {
-  const skip = new Set(['className', 'children']);
-  const parts = ['className', 'children'];
+  const skip = new Set(["className", "children"]);
+  const parts = ["className", "children"];
 
   for (const [key, prop] of Object.entries(props || {})) {
     if (skip.has(key)) continue;
@@ -77,7 +77,7 @@ function buildDestructuring(props) {
     }
   }
 
-  return parts.join(', ');
+  return parts.join(", ");
 }
 
 /**
@@ -90,8 +90,8 @@ function generatePropsInterface(props, componentName) {
   const lines = [];
 
   for (const [key, prop] of Object.entries(props || {})) {
-    const type = mapPropType(prop.type || 'string');
-    const optional = prop.optional !== false ? '?' : '';
+    const type = mapPropType(prop.type || "string");
+    const optional = prop.optional !== false ? "?" : "";
     const camelKey = toCamelCase(key);
 
     if (prop.description) {
@@ -101,7 +101,7 @@ function generatePropsInterface(props, componentName) {
     lines.push(`  ${camelKey}${optional}: ${type};`);
   }
 
-  return `export interface ${componentName}Props {\n${lines.join('\n')}\n}`;
+  return `export interface ${componentName}Props {\n${lines.join("\n")}\n}`;
 }
 
 /**
@@ -197,7 +197,7 @@ ${componentName}.displayName = '${componentName}';
  */
 export function generateReact(spec, options) {
   const { name, props } = spec;
-  const rawName = (name || 'Component').replace(/[^a-zA-Z0-9]/g, '');
+  const rawName = (name || "Component").replace(/[^a-zA-Z0-9]/g, "");
   const componentName = capitalize(rawName);
   const cssClassName = toKebabCase(componentName);
   const useTypeScript = options.typescript !== false;
@@ -209,11 +209,11 @@ export function generateReact(spec, options) {
     ? generateTypeScriptComponent(componentName, destructuring, body, props)
     : generateJavaScriptComponent(componentName, destructuring, body);
 
-  const cssCode = generateCSS(spec, 'react');
+  const cssCode = generateCSS(spec, "react");
 
   return {
-    [`${componentName}.${useTypeScript ? 'tsx' : 'jsx'}`]: componentCode,
+    [`${componentName}.${useTypeScript ? "tsx" : "jsx"}`]: componentCode,
     [`${componentName}.css`]: cssCode,
-    [`${componentName}.stories.${useTypeScript ? 'tsx' : 'jsx'}`]: generateStorybook(spec),
+    [`${componentName}.stories.${useTypeScript ? "tsx" : "jsx"}`]: generateStorybook(spec),
   };
 }

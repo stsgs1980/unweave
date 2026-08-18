@@ -31,18 +31,18 @@ export function addSpacing(arr, value, seen) {
  */
 export function extractSpacing(elements) {
   const spacingProps = [
-    'padding',
-    'padding-top',
-    'padding-right',
-    'padding-bottom',
-    'padding-left',
-    'margin',
-    'margin-top',
-    'margin-right',
-    'margin-bottom',
-    'margin-left',
-    'gap',
-    'grid-gap',
+    "padding",
+    "padding-top",
+    "padding-right",
+    "padding-bottom",
+    "padding-left",
+    "margin",
+    "margin-top",
+    "margin-right",
+    "margin-bottom",
+    "margin-left",
+    "gap",
+    "grid-gap",
   ];
   const spacing = { all: [], padding: [], margin: [], gap: [] };
   const seen = new Set();
@@ -55,9 +55,9 @@ export function extractSpacing(elements) {
         const num = parseFloat(value);
         if (num > 0) {
           addSpacing(spacing.all, num, seen);
-          if (prop.startsWith('padding')) addSpacing(spacing.padding, num, seen);
-          if (prop.startsWith('margin')) addSpacing(spacing.margin, num, seen);
-          if (prop === 'gap' || prop === 'grid-gap') addSpacing(spacing.gap, num, seen);
+          if (prop.startsWith("padding")) addSpacing(spacing.padding, num, seen);
+          if (prop.startsWith("margin")) addSpacing(spacing.margin, num, seen);
+          if (prop === "gap" || prop === "grid-gap") addSpacing(spacing.gap, num, seen);
         }
       }
     }

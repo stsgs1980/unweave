@@ -1,4 +1,4 @@
-import { isLength, addSpacing } from './analyze-spacing.js';
+import { isLength, addSpacing } from "./analyze-spacing.js";
 
 /**
  * Extract border radius from elements
@@ -7,11 +7,11 @@ import { isLength, addSpacing } from './analyze-spacing.js';
  */
 export function extractRadius(elements) {
   const radiusProps = [
-    'border-radius',
-    'border-top-left-radius',
-    'border-top-right-radius',
-    'border-bottom-left-radius',
-    'border-bottom-right-radius',
+    "border-radius",
+    "border-top-left-radius",
+    "border-top-right-radius",
+    "border-bottom-left-radius",
+    "border-bottom-right-radius",
   ];
   const radius = { all: [] };
   const seen = new Set();

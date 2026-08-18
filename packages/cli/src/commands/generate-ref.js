@@ -1,22 +1,22 @@
-import { program } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import { pipelineFromReference } from '@unweave/core';
-import fs from 'fs/promises';
-import path from 'path';
+import { program } from "commander";
+import chalk from "chalk";
+import ora from "ora";
+import { pipelineFromReference } from "@unweave/core";
+import fs from "fs/promises";
+import path from "path";
 
 /**
  *
  */
 export function registerGenerateRefCommand() {
   program
-    .command('generate-ref <name>')
-    .description('Generate component code from saved reference')
-    .requiredOption('-f, --format <format>', 'Output format (react, vue, html)')
-    .option('--ts', 'Use TypeScript', true)
-    .option('-o, --output <dir>', 'Output directory')
+    .command("generate-ref <name>")
+    .description("Generate component code from saved reference")
+    .requiredOption("-f, --format <format>", "Output format (react, vue, html)")
+    .option("--ts", "Use TypeScript", true)
+    .option("-o, --output <dir>", "Output directory")
     .action(async (name, options) => {
-      const spinner = ora('Generating from reference...').start();
+      const spinner = ora("Generating from reference...").start();
 
       try {
         const generated = await pipelineFromReference(name, {
@@ -24,7 +24,7 @@ export function registerGenerateRefCommand() {
           typescript: options.ts,
         });
 
-        spinner.succeed('Code generated');
+        spinner.succeed("Code generated");
 
         if (options.output) {
           await fs.mkdir(options.output, { recursive: true });
@@ -39,7 +39,7 @@ export function registerGenerateRefCommand() {
           }
         }
       } catch (error) {
-        spinner.fail('Generation failed');
+        spinner.fail("Generation failed");
         console.error(chalk.red(error.message));
         process.exit(1);
       }

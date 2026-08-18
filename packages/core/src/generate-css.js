@@ -6,19 +6,19 @@
  */
 export function generateCSS(spec, _format) {
   const { name, designTokens } = spec;
-  const componentName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const componentName = name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
   const tokens = designTokens || {};
   const colors = tokens.colors || {};
   const spacing = tokens.spacing || {};
   const radius = tokens.radius || {};
 
-  const primaryColor = colors.primary || '#0066cc';
-  const secondaryColor = colors.secondary || '#6c757d';
-  const dangerColor = colors.danger || '#dc3545';
-  const borderRadius = radius.scale?.[1] || '8';
-  const spacingSm = spacing.scale?.[1] || '8';
-  const spacingMd = spacing.scale?.[2] || '16';
-  const spacingLg = spacing.scale?.[3] || '24';
+  const primaryColor = colors.primary || "#0066cc";
+  const secondaryColor = colors.secondary || "#6c757d";
+  const dangerColor = colors.danger || "#dc3545";
+  const borderRadius = radius.scale?.[1] || "8";
+  const spacingSm = spacing.scale?.[1] || "8";
+  const spacingMd = spacing.scale?.[2] || "16";
+  const spacingLg = spacing.scale?.[3] || "24";
 
   return `:root {
   --${componentName}-bg-primary: ${primaryColor};
