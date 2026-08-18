@@ -27,3 +27,10 @@ npm-debug.log*
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Test outputs
+smoke-test/
+packages/*/smoke-test/
+
+# npm lockfile (we use pnpm)
+package-lock.json
