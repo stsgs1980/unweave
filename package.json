@@ -1,35 +1,47 @@
 {
-  "name": "untitled5",
-  "version": "1.0.0",
-  "description": "",
-  "main": "test.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "unweave",
+  "version": "0.1.0",
+  "description": "Extract UI components, design tokens, and patterns from any website.",
+  "author": "stsgs1980",
+  "license": "MIT",
   "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @unweave/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "cli": "pnpm --filter @unweave/cli start",
+    "mcp": "pnpm --filter @unweave/mcp start",
+    "prepare": "husky",
+    "clean": "rm -rf node_modules packages/*/node_modules"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@types/node": "^20.12.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.66.0",
     "@typescript-eslint/parser": "^8.66.0",
     "eslint": "^10.8.1",
+    "eslint-config-next": "^16.1.1",
     "eslint-plugin-jsdoc": "^64.2.0",
     "eslint-plugin-markdown": "^5.1.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.0",
+    "vitest": "^2.0.0"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx,md,json,css,html}": "prettier --write",
     "*.{js,ts,jsx,tsx,md}": "eslint --fix"
-  },
-  "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
   }
 }

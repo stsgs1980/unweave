@@ -1,0 +1,16 @@
+{
+  "name": "@unweave/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for unweave",
+  "type": "module",
+  "bin": {
+    "unweave-mcp": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@unweave/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

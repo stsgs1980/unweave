@@ -1,0 +1,10 @@
+export { registerPipelineCommand } from './pipeline.js';
+export { registerExtractCommand } from './extract.js';
+export { registerAnalyzeCommand } from './analyze.js';
+export { registerSpecCommand } from './spec.js';
+export { registerGenerateCommand } from './generate.js';
+export { registerLearnCommand } from './learn.js';
+export { registerReferencesCommand } from './references.js';
+export { registerGenerateRefCommand } from './generate-ref.js';
+export { registerScreenshotCommand } from './screenshot.js';
+export { registerCompareCommand } from './compare.js';

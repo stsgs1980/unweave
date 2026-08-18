@@ -1,67 +1,106 @@
-# webstorm-config
+Вот обновлё
 
-Template repository for WebStorm projects with pre-configured ESLint, Prettier, TypeScript, Husky, and AI rules.
+# unweave
 
-## Quick Start
+> **Status**: ACTIVE
+> **Last Updated**: 2026-08-18
 
-### Option 1: GitHub Template (recommended)
+## Overview
+
+Extract UI components, design tokens, and patterns from any website. Generate production-ready React, Vue, or HTML code. Ships as CLI, MCP server, and a polished web app.
+
+Reverse-engineer any UI. Rebuild it your way.
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Scripts](#scripts)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- Extract DOM, CSS variables, computed styles, images, screenshots
+- Analyze design system: colors, spacing, radius, typography
+- Generate component specs (props, states, accessibility)
+- Output HTML, React, or Vue components with CSS/SCSS/Tailwind
+- Full extract -> analyze -> spec -> generate pipeline in one command
+- Save any site as a reference for future regeneration
+- MCP Server for AI agents (Cursor, Claude, Windsurf, VS Code)
+
+## Tech Stack
+
+- **Core**: Playwright, TypeScript
+- **CLI**: Commander, Chalk, Ora
+- **MCP**: Model Context Protocol SDK
+- **Web**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
+- **UI Libraries**: Untitled UI (FREE), Magic UI, Tremor Raw, cmdk, Motion
+- **State**: Zustand, TanStack Query
+- **Forms**: React Hook Form + Zod
+- **Linting**: ESLint, Prettier, Husky, commitlint
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 20.12.0
+- pnpm >= 9.0.0
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-gh repo create my-project --template stsgs1980/webstorm-config --clone
-cd my-project
-npm install
+git clone https://github.com/stsgs1980/unweave.git
+cd unweave
 ```
 
-### Option 2: degit (no git history)
+2. Install dependencies:
 
 ```bash
-npx degit stsgs1980/webstorm-config my-project
-cd my-project
-npm install
+pnpm install
 ```
 
-### Option 3: Manual clone
+3. Approve build scripts (first time only):
 
 ```bash
-git clone https://github.com/stsgs1980/webstorm-config my-project
-cd my-project
-rm -rf .git
-git init
-npm install
+pnpm approve-builds
 ```
 
-## What's Included
+## Scripts
 
-| Tool                    | Config                                                                                                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| **ESLint**              | `eslint.config.js` — TS/JS/JSX/MD, JSDoc required, unicode policy, markdown snippets                      |
-| **Prettier**            | `.prettierrc` + `.prettierignore`                                                                         |
-| **TypeScript**          | `tsconfig.json` (extends `tsconfig.base.json`), strict mode                                               |
-| **Git hooks**           | Husky + lint-staged (pre-commit: prettier + eslint --fix)                                                 |
-| **Commitlint**          | Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)                                                     |
-| **EditorConfig**        | `.editorconfig`                                                                                           |
-| **WebStorm codestyle**  | `webstorm-codestyle.xml`                                                                                  |
-| **AI Rules**            | `.aiassistant/rules/AI Rules.md` — project conventions (JSDoc, trailing commas, 250 lines max, TS strict) |
-| **Custom ESLint rules** | `eslint-rules/` (unicode-policy, code-block-language)                                                     |
-| **Custom processors**   | `eslint-processors/` (markdown snippets)                                                                  |
+- `pnpm dev` — start Next.js development server
+- `pnpm build` — build all packages
+- `pnpm lint` — run ESLint
+- `pnpm lint:fix` — fix ESLint issues automatically
+- `pnpm format` — format code with Prettier
+- `pnpm format:check` — check formatting
+- `pnpm typecheck` — run TypeScript type checking
+- `pnpm test` — run tests with Vitest
+- `pnpm cli` — run CLI commands
+- `pnpm mcp` — start MCP server
+- `pnpm clean` — remove node_modules
 
-## Project Conventions (from `.aiassistant/rules/AI Rules.md`)
+## Architecture
 
-- **JSDoc** required for every function/method/React component (`@param`, `@returns`)
-- **Trailing commas** required in objects/arrays
-- **Max file length**: 250 lines (TS/JS), 200 lines (components)
-- **TypeScript strict mode**, explicit types (no `any`)
-- **Single quotes**, semicolons, 2 spaces, 100 char line limit
-- **Anti-monolith**: auto-split at thresholds (3+ useState, 50-line functions)
-- **Conventional Commits** enforced via commitlint
+Monorepo with four packages:
 
-## After Creating a Project
+- `packages/core` — Core library (extract, analyze, spec, generate, pipeline)
+- `packages/cli` — Command-line interface
+- `packages/mcp` — MCP server for AI agents (Cursor, Claude, Windsurf)
+- `packages/web` — Next.js web application with redesigned UI
 
-1. Update `package.json`: `name`, `description`, `author`
-2. Copy `README.template.md` → `README.md` and fill in project details
-3. Adjust `eslint.config.js` if needed (e.g., change JSDoc warnings to errors)
-4. Add project-specific scripts to `package.json`
+Data flow: URL -> Playwright extraction -> Analysis (design system, components, patterns) -> Spec generation -> Code generation (React/Vue/HTML).
+
+## Contributing
+
+1. Create a new branch: `git checkout -b feat/your-feature`
+2. Make a commit: `git commit -m "feat: add your feature"`
+3. Push changes: `git push origin feat/your-feature`
 
 ## License
 
-MIT
+This project is licensed under the MIT License.

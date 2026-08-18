@@ -1,0 +1,21 @@
+{
+  "name": "@unweave/core",
+  "version": "0.1.0",
+  "description": "Core library for UI extraction",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./extract": "./src/extract.js",
+    "./analyze": "./src/analyze.js",
+    "./spec": "./src/spec.js",
+    "./generate": "./src/generate.js",
+    "./pipeline": "./src/pipeline.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "playwright": "^1.62.0"
+  }
+}
