@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file ExtractInput component for entering URLs to analyze.
  */
@@ -5,26 +7,48 @@
 import React, { useState } from "react";
 
 /**
- * Props for the ExtractInput component.
- * @property {(url: string) => void} onSubmit - Callback triggered when a URL is submitted.
- */
-interface ExtractInputProps {
-  onSubmit: (url: string) => void;
-}
-
-/**
  * Renders a form with a URL input and a submit button.
- * @param {ExtractInputProps} props - The component props.
- * @returns {React.JSX.Element} The rendered input form.
+ * @returns The rendered input form.
  */
-export default function ExtractInput({ onSubmit }: ExtractInputProps) {
+export default function ExtractInput() {
   const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!url.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || "[FAIL] Failed to start extraction");
+        return;
+      }
+
+      console.log("[OK] Extraction initiated successfully");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Разбиваем длинные строки классов, чтобы уложиться в 100 символов
   const inputClass = [
     "flex-1 rounded-md border border-border bg-background",
     "px-4 py-2 placeholder:text-muted-foreground",
     "focus:outline-none focus:ring-2 focus:ring-ring",
+    "disabled:opacity-50",
   ].join(" ");
 
   const buttonClass = [
@@ -33,15 +57,7 @@ export default function ExtractInput({ onSubmit }: ExtractInputProps) {
   ].join(" ");
 
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (url.trim()) {
-          onSubmit(url.trim());
-        }
-      }}
-      className="w-full space-y-4"
-    >
+    <form onSubmit={handleSubmit} className="w-full space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="url"
@@ -50,11 +66,13 @@ export default function ExtractInput({ onSubmit }: ExtractInputProps) {
           placeholder="Enter website URL to extract..."
           className={inputClass}
           required
+          disabled={isLoading}
         />
-        <button type="submit" className={buttonClass}>
-          Extract UI
+        <button type="submit" className={buttonClass} disabled={isLoading}>
+          {isLoading ? "Extracting..." : "Extract UI"}
         </button>
       </div>
+      {error && <p className="text-sm text-red-500">{error}</p>}
       <p className="text-sm text-muted-foreground">
         Enter the URL of the site you want to analyze and extract components from.
       </p>
