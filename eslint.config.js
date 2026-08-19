@@ -37,27 +37,6 @@ export default [
     },
   },
   {
-    files: ["**/*.md/**"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        ecmaFeatures: { jsx: true },
-      },
-    },
-    linterOptions: {
-      reportUnusedDisableDirectives: false,
-    },
-    plugins: {
-      "unicode-policy": unicodePolicy,
-    },
-    rules: {
-      "unicode-policy/emoji": "error",
-      "unicode-policy/unicode-graphics": "error",
-    },
-  },
-  {
     files: ["**/*.md"],
     plugins: {
       "unicode-policy": unicodePolicy,

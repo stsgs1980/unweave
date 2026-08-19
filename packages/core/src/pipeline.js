@@ -1,9 +1,10 @@
-import { extract } from "./extract.js";
+import { extract, extractMultiple } from "./extract.js";
 import { analyze } from "./analyze.js";
 import { generateSpec } from "./spec.js";
 import { generate } from "./generate.js";
-import { saveReference, loadReference } from "./references.js";
-import { compare } from "./compare.js";
+import fs from "fs/promises";
+import path from "path";
+import { diffDesignSystems, diffComponents, diffPatterns } from "./diff.js";
 
 /**
  * Full pipeline: extract -> analyze -> spec -> generate
@@ -104,8 +105,6 @@ export async function pipeline(urls, options = {}) {
  * Run pipeline with saved reference
  * @param {string} referenceName - Name of saved reference
  * @param {Object} options - Generation options
- * @param {string} [options.format] - Output format
- * @param {boolean} [options.typescript] - Use TypeScript
  * @returns {Promise<Object>} Generated code or reference data
  */
 export async function pipelineFromReference(referenceName, options = {}) {
@@ -125,9 +124,76 @@ export async function pipelineFromReference(referenceName, options = {}) {
 }
 
 /**
- * Infer component type from name
- * @param {string} name - Component name
- * @returns {string} Inferred component type
+ * Save reference to catalog
+ * @param {string} name - Reference name
+ * @param {Object} data - Reference data
+ * @returns {Promise<string>} Saved reference path
+ */
+export async function saveReference(name, data) {
+  const dir = path.join(process.cwd(), "references");
+  await fs.mkdir(dir, { recursive: true });
+
+  const filePath = path.join(dir, `${name}.json`);
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+
+  return filePath;
+}
+
+/**
+ * Load reference from catalog
+ * @param {string} name - Reference name
+ * @returns {Promise<Object|null>} Reference data or null
+ */
+export async function loadReference(name) {
+  const filePath = path.join(process.cwd(), "references", `${name}.json`);
+
+  try {
+    const content = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * List all saved references
+ * @returns {Promise<string[]>} Reference names
+ */
+export async function listReferences() {
+  const dir = path.join(process.cwd(), "references");
+
+  try {
+    const files = await fs.readdir(dir);
+    return files.filter((f) => f.endsWith(".json")).map((f) => f.replace(".json", ""));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Compare two URLs
+ * @param {string} url1 - First URL
+ * @param {string} url2 - Second URL
+ * @returns {Promise<Object>} Comparison results
+ */
+export async function compare(url1, url2) {
+  const [extracted1, extracted2] = await extractMultiple([url1, url2]);
+  const analysis1 = analyze(extracted1);
+  const analysis2 = analyze(extracted2);
+
+  return {
+    url1,
+    url2,
+    designSystemDiff: diffDesignSystems(analysis1.designSystem, analysis2.designSystem),
+    componentDiff: diffComponents(analysis1.components, analysis2.components),
+    patternDiff: diffPatterns(analysis1.patterns, analysis2.patterns),
+  };
+}
+
+/**
+ * Определяет тип компонента по его имени
+ * @param {string} name - Имя компонента (например, 'Button', 'Card', 'Modal')
+ * @returns {'button' | 'input' | 'card' | 'modal' | 'navigation' | 'generic'} Тип компонента
  */
 function inferComponentType(name) {
   const lower = name.toLowerCase();
@@ -138,6 +204,3 @@ function inferComponentType(name) {
   if (lower.includes("nav") || lower.includes("menu")) return "navigation";
   return "generic";
 }
-
-// Re-export for backward compatibility
-export { compare };
