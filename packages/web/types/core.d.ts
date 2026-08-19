@@ -26,6 +26,7 @@ declare module "@unweave/core/pipeline" {
   export function listReferences(): Promise<string[]>;
   export function loadReference(name: string): Promise<any | null>;
   export function saveReference(name: string, data: any): Promise<string>;
+  export function compare(url1: string, url2: string): Promise<any>;
 }
 
 declare module "@unweave/core/spec" {

@@ -35,6 +35,22 @@ function createServer(): Server {
           required: ["url"],
         },
       },
+      {
+        name: "list_references",
+        description: "List all saved design system references",
+      },
+      {
+        name: "compare_designs",
+        description: "Compare two URLs and return design system differences",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url1: { type: "string" },
+            url2: { type: "string" },
+          },
+          required: ["url1", "url2"],
+        },
+      },
     ],
   }));
 
@@ -78,6 +94,58 @@ function createServer(): Server {
             {
               type: "text",
               text: `Failed to execute pipeline: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    if (request.params.name === "list_references") {
+      try {
+        const { listReferences } = await import("@unweave/core/pipeline");
+        const names = await listReferences();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(names),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to list references: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    if (request.params.name === "compare_designs") {
+      const { url1, url2 } = request.params.arguments as { url1: string; url2: string };
+
+      try {
+        const { compare } = await import("@unweave/core/pipeline");
+        const result = await compare(url1, url2);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to compare designs: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           isError: true,
