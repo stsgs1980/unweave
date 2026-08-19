@@ -4,7 +4,8 @@ import React from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
 /**
- *
+ * Renders the final step of the extraction wizard: Results.
+ * @returns {React.JSX.Element} The rendered step component.
  */
 export default function StepResult() {
   const { reset, jobId } = useWizardStore();

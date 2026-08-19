@@ -11,6 +11,10 @@ import {
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Generates variant-based class names for the button component.
+ * @returns {string} The computed class string.
+ */
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
@@ -49,11 +53,9 @@ const buttonVariants = cva(
 );
 
 /**
- *
- * @param root0
- * @param root0.className
- * @param root0.variant
- * @param root0.size
+ * Button component using react-aria-components.
+ * @param {Omit<ButtonPrimitiveProps, "className"> & React.RefAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & { className?: string }} props - Button props.
+ * @returns {React.JSX.Element} The rendered button element.
  */
 function Button({
   className,
@@ -77,11 +79,9 @@ function Button({
 }
 
 /**
- *
- * @param root0
- * @param root0.className
- * @param root0.variant
- * @param root0.size
+ * LinkButton component using react-aria-components.
+ * @param {Omit<LinkPrimitiveProps, "className"> & VariantProps<typeof buttonVariants> & { className?: string }} props - LinkButton props.
+ * @returns {React.JSX.Element} The rendered link button element.
  */
 function LinkButton({
   className,

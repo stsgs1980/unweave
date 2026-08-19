@@ -3,7 +3,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { subscribe, getActiveJobs } from "@/lib/jobStore";
+import { subscribe, getActiveJobs, Job } from "@/lib/jobStore";
 
 /**
  * Handles GET requests to establish an SSE connection.
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       sendEvent({ type: "initial", jobs: getActiveJobs() });
 
       // 2. Подписываемся на будущие обновления
-      const unsubscribe = subscribe((job) => {
+      const unsubscribe = subscribe((job: Job) => {
         sendEvent({ type: "update", job });
       });
 

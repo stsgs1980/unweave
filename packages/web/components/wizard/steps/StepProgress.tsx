@@ -3,7 +3,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
 /**
- *
+ * Renders Step 3 of the extraction wizard: Progress tracking.
+ * @returns {React.JSX.Element} The rendered step component.
  */
 export default function StepProgress() {
   const { url, setJobId, setStep, reset } = useWizardStore();

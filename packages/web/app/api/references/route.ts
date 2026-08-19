@@ -15,7 +15,7 @@ export async function GET(): Promise<NextResponse> {
 
     // Загружаем метаданные из каждого файла
     const references = await Promise.all(
-      names.map(async (name) => {
+      names.map(async (name: string) => {
         const data = await loadReference(name);
         return {
           name,

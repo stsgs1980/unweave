@@ -3,7 +3,8 @@ import React from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
 /**
- *
+ * Renders Step 1 of the extraction wizard: URL input.
+ * @returns {React.JSX.Element} The rendered step component.
  */
 export default function StepUrl() {
   const { url, setUrl, setStep } = useWizardStore();

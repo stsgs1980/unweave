@@ -3,7 +3,8 @@ import React from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
 /**
- *
+ * Renders Step 2 of the extraction wizard: Options.
+ * @returns {React.JSX.Element} The rendered step component.
  */
 export default function StepOptions() {
   const { setStep, reset } = useWizardStore();

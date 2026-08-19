@@ -4,7 +4,8 @@ import { useWizardStore } from "@/store/wizard-store";
 import { useUIStore } from "@/store/ui-store";
 
 /**
- *
+ * Renders the extract input form with a button to open the extraction wizard.
+ * @returns {React.JSX.Element} The rendered input form.
  */
 export default function ExtractInput() {
   const setWizardOpen = useUIStore((state) => state.setWizardOpen);

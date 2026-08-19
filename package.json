@@ -13,7 +13,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm --filter @unweave/web typecheck",
     "test": "vitest",
     "cli": "node packages/cli/src/index.js",
     "mcp": "pnpm --filter @unweave/mcp start",

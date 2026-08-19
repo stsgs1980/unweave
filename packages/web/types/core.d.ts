@@ -22,6 +22,10 @@ declare module "@unweave/core/pipeline" {
       error?: string;
     }>
   >;
+
+  export function listReferences(): Promise<string[]>;
+  export function loadReference(name: string): Promise<any | null>;
+  export function saveReference(name: string, data: any): Promise<string>;
 }
 
 declare module "@unweave/core/spec" {
