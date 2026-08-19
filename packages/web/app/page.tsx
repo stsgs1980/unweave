@@ -1,43 +1,44 @@
+"use client";
+
 /**
  * @file Main entry point for the web application dashboard.
  * @description Renders the initial dashboard layout matching the UI reference.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ExtractInput from "@/components/dashboard/ExtractInput";
 import StatsCard from "@/components/dashboard/StatsCard";
 import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
-
-// Mock data for recent projects
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "E-commerce Layout",
-    url: "https://example-shop.com",
-    date: "2023-10-25",
-    status: "Completed",
-  },
-  {
-    id: "2",
-    name: "SaaS Landing Page",
-    url: "https://example-saas.com",
-    date: "2023-10-20",
-    status: "Completed",
-  },
-  {
-    id: "3",
-    name: "Portfolio Site",
-    url: "https://example-portfolio.com",
-    date: "2023-10-18",
-    status: "Failed",
-  },
-];
 
 /**
  * Dashboard component representing the main landing page.
  * @returns The rendered dashboard page.
  */
 export default function Dashboard() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    /**
+     * Fetches projects from the API route.
+     */
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch("/api/projects");
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error("[FAIL] Failed to load projects:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col p-8">
       <header className="mb-8">
@@ -55,13 +56,23 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <StatsCard title="Components Extracted" value={142} description="+12 this week" />
           <StatsCard title="Design Tokens" value={89} description="Updated 2 days ago" />
-          <StatsCard title="References Saved" value={5} description="Latest: example.com" />
+          <StatsCard
+            title="References Saved"
+            value={projects.length}
+            description="Synced with Core"
+          />
         </div>
 
         {/* Recent projects grid */}
         <div className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold text-foreground">Recent Projects</h2>
-          <RecentProjects projects={mockProjects} />
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          ) : (
+            <RecentProjects projects={projects} />
+          )}
         </div>
       </section>
     </main>

@@ -14,13 +14,15 @@ export default function ExtractInput() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!url.trim()) return;
 
     setIsLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       const response = await fetch("/api/extract", {
@@ -29,13 +31,16 @@ export default function ExtractInput() {
         body: JSON.stringify({ url: url.trim() }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || "[FAIL] Failed to start extraction");
+        // Убрали throw, напрямую устанавливаем ошибку и выходим
+        setError(data.error || "[FAIL] Failed to start extraction");
         return;
       }
 
-      console.log("[OK] Extraction initiated successfully");
+      setSuccessMsg("[OK] Extraction completed successfully!");
+      setUrl(""); // Очищаем поле после успеха
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -43,7 +48,6 @@ export default function ExtractInput() {
     }
   };
 
-  // Разбиваем длинные строки классов, чтобы уложиться в 100 символов
   const inputClass = [
     "flex-1 rounded-md border border-border bg-background",
     "px-4 py-2 placeholder:text-muted-foreground",
@@ -73,6 +77,7 @@ export default function ExtractInput() {
         </button>
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
+      {successMsg && <p className="text-sm text-green-500">{successMsg}</p>}
       <p className="text-sm text-muted-foreground">
         Enter the URL of the site you want to analyze and extract components from.
       </p>

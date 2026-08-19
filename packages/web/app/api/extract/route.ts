@@ -18,19 +18,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "[FAIL] URL is required" }, { status: 400 });
     }
 
-    // [TODO] Integrate with @unweave/core pipeline
     console.log(`[INFO] Starting extraction for: ${url}`);
 
-    // Simulate async operation (remove in production)
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Импортируем функцию пайплайна из ядра.
+    const { runPipeline } = await import("@unweave/core/pipeline");
+
+    // Запускаем процесс экстракции.
+    const result = await runPipeline({ url, outputDir: "extracted_data" });
+
+    if (!result.success) {
+      const errorMessage = result.error || "Extraction failed in core";
+      return NextResponse.json({ error: `[FAIL] ${errorMessage}` }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
-      message: "[OK] Extraction started",
-      data: { url },
+      message: "[OK] Extraction completed successfully",
+      data: result.data,
     });
   } catch (error) {
     console.error("[ERROR] Extraction failed:", error);
-    return NextResponse.json({ error: "[FAIL] Internal Server Error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `[FAIL] ${errorMessage}` }, { status: 500 });
   }
 }

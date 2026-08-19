@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import React from "react"; // <--- Добавлен импорт React
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import CommandPalette from "@/components/CommandPalette";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,6 +41,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
         >
           {children}
+          {/* Добавляем палитру команд глобально */}
+          <CommandPalette />
         </ThemeProvider>
       </body>
     </html>
