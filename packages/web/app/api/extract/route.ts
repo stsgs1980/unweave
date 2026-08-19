@@ -23,28 +23,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const jobId = randomUUID();
     createJob(jobId);
 
-    // Запускаем пайплайн в фоне, не блокируя ответ.
-    // `void` используется, чтобы сказать линтеру, что мы намеренно не используем await.
     void (async () => {
       try {
-        updateJob(jobId, { status: "processing", progress: 10 });
+        updateJob(jobId, {
+          status: "processing",
+          progress: 10,
+          result: { message: "Starting pipeline..." },
+        });
 
-        // Импортируем реальную функцию pipeline из ядра
         const { pipeline } = await import("@unweave/core/pipeline");
-        updateJob(jobId, { progress: 50 });
 
-        // Вызываем реальный пайплайн
-        const results = await pipeline(url, {});
-        const result = results[0]; // pipeline всегда возвращает массив
+        // Передаем callback для обновления прогресса
+        const onProgress = (progress: number, message: string) => {
+          updateJob(jobId, { progress, result: { message } });
+        };
+
+        const results = await pipeline(url, {}, onProgress);
+        const result = results[0];
 
         if (result.success) {
           updateJob(jobId, {
             status: "completed",
             progress: 100,
-            result, // Используем сокращенную форму (shorthand)
+            result,
           });
         } else {
-          // Убрали throw, обрабатываем ошибку напрямую
           const errorMessage = result.error || "Extraction failed in core";
           updateJob(jobId, { status: "failed", error: errorMessage });
           return;

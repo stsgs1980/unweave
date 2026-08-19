@@ -1,16 +1,18 @@
 {
   "name": "@unweave/mcp",
   "version": "0.1.0",
-  "description": "MCP server for unweave",
+  "description": "MCP server for unweave extraction tools",
   "type": "module",
+  "main": "src/index.ts",
   "bin": {
-    "unweave-mcp": "./src/server.js"
+    "unweave-mcp": "src/index.ts"
   },
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node --experimental-strip-types src/index.ts",
+    "dev": "node --watch --experimental-strip-types src/index.ts"
   },
   "dependencies": {
-    "@unweave/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@unweave/core": "workspace:*"
   }
 }

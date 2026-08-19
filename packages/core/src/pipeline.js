@@ -19,9 +19,10 @@ import { diffDesignSystems, diffComponents, diffPatterns } from "./diff.js";
  * @param {string} [options.format] - Output format
  * @param {boolean} [options.typescript] - Use TypeScript
  * @param {string} [options.learn] - Save as reference name
+ * @param {Function} [onProgress] - Callback for progress updates (progress, message)
  * @returns {Promise<Array>} Pipeline results
  */
-export async function pipeline(urls, options = {}) {
+export async function pipeline(urls, options = {}, onProgress) {
   const urlArray = Array.isArray(urls) ? urls : [urls];
   const results = [];
 
@@ -30,6 +31,7 @@ export async function pipeline(urls, options = {}) {
       console.log(`[pipeline] Processing: ${url}`);
 
       // Step 1: Extract
+      if (onProgress) onProgress(25, "Extracting components...");
       console.log("[pipeline] Extracting...");
       const extracted = await extract(url, {
         screenshot: options.screenshot,
@@ -39,12 +41,14 @@ export async function pipeline(urls, options = {}) {
       });
 
       // Step 2: Analyze
+      if (onProgress) onProgress(50, "Analyzing design system...");
       console.log("[pipeline] Analyzing...");
       const analysis = analyze(extracted);
 
       // Step 3: Generate spec (if component specified)
       let spec = null;
       if (options.component) {
+        if (onProgress) onProgress(75, "Generating specification...");
         console.log("[pipeline] Generating spec...");
         spec = generateSpec(analysis, {
           componentName: options.component,
@@ -56,6 +60,7 @@ export async function pipeline(urls, options = {}) {
       // Step 4: Generate code (if format specified)
       let generated = null;
       if (options.format && spec) {
+        if (onProgress) onProgress(90, "Generating code...");
         console.log("[pipeline] Generating code...");
         generated = generate(spec, {
           format: options.format,
@@ -77,6 +82,9 @@ export async function pipeline(urls, options = {}) {
         });
       }
 
+      if (onProgress) onProgress(100, "Extraction completed");
+      console.log(`[pipeline] Completed: ${url}`);
+
       results.push({
         url,
         success: true,
@@ -86,8 +94,6 @@ export async function pipeline(urls, options = {}) {
         generated,
         reference,
       });
-
-      console.log(`[pipeline] Completed: ${url}`);
     } catch (error) {
       console.error(`[pipeline] Failed: ${url}`, error);
       results.push({
@@ -203,36 +209,4 @@ function inferComponentType(name) {
   if (lower.includes("modal") || lower.includes("dialog")) return "modal";
   if (lower.includes("nav") || lower.includes("menu")) return "navigation";
   return "generic";
-}
-/**
- * Runs the extraction pipeline.
- * This is a wrapper function for the API to consume.
- * @param {Object} options - Pipeline options.
- * @param {string} options.url - The URL to extract.
- * @param {string} options.outputDir - The directory to save output.
- * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
- */
-export async function runPipeline(options) {
-  console.log("[Core] runPipeline called with:", options);
-
-  try {
-    // Симулируем долгую работу Playwright (2 секунды)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // В будущем здесь будет реальный код:
-    // const result = await handlePipelineAction(options);
-
-    return {
-      success: true,
-      data: {
-        url: options.url,
-        message: "Extraction completed successfully (mock)",
-      },
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown core error",
-    };
-  }
 }

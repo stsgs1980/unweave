@@ -22,10 +22,6 @@ export default function Dashboard() {
   const isWizardOpen = useUIStore((state) => state.isWizardOpen);
 
   useEffect(() => {
-    /**
-     * Fetches projects from the API route.
-     * @returns {Promise<void>}
-     */
     const fetchProjects = async (): Promise<void> => {
       try {
         const response = await fetch("/api/projects");
@@ -58,12 +54,23 @@ export default function Dashboard() {
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <StatsCard title="Components Extracted" value={142} description="+12 this week" />
-          <StatsCard title="Design Tokens" value={89} description="Updated 2 days ago" />
+          <StatsCard
+            title="Components Extracted"
+            value={142}
+            description="+12 this week"
+            data={[10, 15, 12, 20, 18, 25, 30, 28, 35]}
+          />
+          <StatsCard
+            title="Design Tokens"
+            value={89}
+            description="Updated 2 days ago"
+            data={[5, 8, 10, 9, 12, 15, 14, 18]}
+          />
           <StatsCard
             title="References Saved"
             value={projects.length}
             description="Synced with Core"
+            data={[1, 3, 2, 4, 5, 4, 6, 8]}
           />
         </div>
 

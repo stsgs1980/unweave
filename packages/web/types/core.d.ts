@@ -10,6 +10,7 @@ declare module "@unweave/core/pipeline" {
   export function pipeline(
     urls: string | string[],
     options?: any,
+    onProgress?: (progress: number, message: string) => void,
   ): Promise<
     Array<{
       url: string;
