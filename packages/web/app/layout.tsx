@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import React from "react"; // <--- Добавлен импорт React
+import React from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import CommandPalette from "@/components/CommandPalette";
+import Navbar from "@/components/Navbar"; // <-- Добавлен импорт
 import "./globals.css";
 
 const inter = Inter({
@@ -40,8 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
-          {/* Добавляем палитру команд глобально */}
+          {/* Добавляем навигацию глобально */}
+          <Navbar />
+          <main className="flex-1">{children}</main>
           <CommandPalette />
         </ThemeProvider>
       </body>

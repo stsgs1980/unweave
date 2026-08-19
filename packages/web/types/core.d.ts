@@ -22,8 +22,12 @@ declare module "@unweave/core/pipeline" {
       error?: string;
     }>
   >;
+}
 
-  export function runPipeline(
-    options: any,
-  ): Promise<{ success: boolean; data?: any; error?: string }>;
+declare module "@unweave/core/spec" {
+  export function generateSpec(analysis: any, options: any): any;
+}
+
+declare module "@unweave/core/generate" {
+  export function generate(spec: any, options: any): string;
 }

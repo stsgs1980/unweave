@@ -10,6 +10,7 @@ import ExtractInput from "@/components/dashboard/ExtractInput";
 import StatsCard from "@/components/dashboard/StatsCard";
 import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
 import ExtractWizard from "@/components/wizard/ExtractWizard";
+import LivePipelineWidget from "@/components/dashboard/LivePipelineWidget"; // <-- Добавлен импорт
 import { useUIStore } from "@/store/ui-store";
 
 /**
@@ -40,7 +41,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <main className="flex min-h-screen flex-col p-8">
+    <main className="flex h-[calc(100vh-65px)] flex-col p-8 overflow-y-auto">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground">Welcome to unweave web interface.</p>
@@ -51,6 +52,9 @@ export default function Dashboard() {
         <div className="rounded-lg border border-border p-6">
           <ExtractInput />
         </div>
+
+        {/* Live Pipeline Widget (SSE) */}
+        <LivePipelineWidget />
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

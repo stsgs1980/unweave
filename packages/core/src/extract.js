@@ -15,7 +15,7 @@ export async function extract(url, options = {}) {
   const page = await context.newPage();
 
   try {
-    await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     // Wait for any additional settling
     if (options.waitFor) {

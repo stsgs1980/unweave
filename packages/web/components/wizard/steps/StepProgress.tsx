@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
 /**
@@ -11,7 +11,13 @@ export default function StepProgress() {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("Initializing...");
 
+  // Хук, чтобы предотвратить двойной запуск в React Strict Mode
+  const hasStarted = useRef(false);
+
   useEffect(() => {
+    if (hasStarted.current) return;
+    hasStarted.current = true;
+
     const startExtraction = async () => {
       try {
         const res = await fetch("/api/extract", {

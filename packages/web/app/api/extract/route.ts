@@ -21,21 +21,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const jobId = randomUUID();
-    createJob(jobId);
+    // Передаем URL в хранилище
+    createJob(jobId, url);
 
+    // Запускаем пайплайн в фоне, не блокируя ответ.
     void (async () => {
       try {
-        updateJob(jobId, {
-          status: "processing",
-          progress: 10,
-          result: { message: "Starting pipeline..." },
-        });
+        updateJob(jobId, { status: "processing", progress: 10, message: "Starting pipeline..." });
 
         const { pipeline } = await import("@unweave/core/pipeline");
 
-        // Передаем callback для обновления прогресса
         const onProgress = (progress: number, message: string) => {
-          updateJob(jobId, { progress, result: { message } });
+          updateJob(jobId, { progress, message });
         };
 
         const results = await pipeline(url, {}, onProgress);
