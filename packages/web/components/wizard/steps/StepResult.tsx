@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import { useWizardStore } from "@/store/wizard-store";
 
@@ -6,7 +7,7 @@ import { useWizardStore } from "@/store/wizard-store";
  *
  */
 export default function StepResult() {
-  const { reset } = useWizardStore();
+  const { reset, jobId } = useWizardStore();
 
   return (
     <div className="space-y-4 text-center">
@@ -19,8 +20,9 @@ export default function StepResult() {
         >
           New Extraction
         </button>
+        {/* Передаем jobId в URL */}
         <a
-          href="/workspace"
+          href={`/workspace?jobId=${jobId}`}
           className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
         >
           View Workspace

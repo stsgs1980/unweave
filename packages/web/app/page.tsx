@@ -24,8 +24,9 @@ export default function Dashboard() {
   useEffect(() => {
     /**
      * Fetches projects from the API route.
+     * @returns {Promise<void>}
      */
-    const fetchProjects = async () => {
+    const fetchProjects = async (): Promise<void> => {
       try {
         const response = await fetch("/api/projects");
         if (response.ok) {
@@ -39,7 +40,7 @@ export default function Dashboard() {
       }
     };
 
-    fetchProjects();
+    void fetchProjects();
   }, []);
 
   return (
