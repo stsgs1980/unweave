@@ -11,12 +11,17 @@
     "./analyze": "./src/analyze.js",
     "./spec": "./src/spec.js",
     "./generate": "./src/generate.js",
-    "./pipeline": "./src/pipeline.js"
+    "./pipeline": "./src/pipeline.js",
+    "./diff": "./src/diff.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "playwright": "^1.62.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
   }
 }
