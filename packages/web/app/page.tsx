@@ -9,6 +9,8 @@ import React, { useEffect, useState } from "react";
 import ExtractInput from "@/components/dashboard/ExtractInput";
 import StatsCard from "@/components/dashboard/StatsCard";
 import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
+import ExtractWizard from "@/components/wizard/ExtractWizard";
+import { useUIStore } from "@/store/ui-store";
 
 /**
  * Dashboard component representing the main landing page.
@@ -17,6 +19,7 @@ import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isWizardOpen = useUIStore((state) => state.isWizardOpen);
 
   useEffect(() => {
     /**
@@ -75,6 +78,9 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      {/* Extract Wizard Modal */}
+      {isWizardOpen && <ExtractWizard />}
     </main>
   );
 }

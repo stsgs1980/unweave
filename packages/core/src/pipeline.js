@@ -204,3 +204,35 @@ function inferComponentType(name) {
   if (lower.includes("nav") || lower.includes("menu")) return "navigation";
   return "generic";
 }
+/**
+ * Runs the extraction pipeline.
+ * This is a wrapper function for the API to consume.
+ * @param {Object} options - Pipeline options.
+ * @param {string} options.url - The URL to extract.
+ * @param {string} options.outputDir - The directory to save output.
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export async function runPipeline(options) {
+  console.log("[Core] runPipeline called with:", options);
+
+  try {
+    // Симулируем долгую работу Playwright (2 секунды)
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // В будущем здесь будет реальный код:
+    // const result = await handlePipelineAction(options);
+
+    return {
+      success: true,
+      data: {
+        url: options.url,
+        message: "Extraction completed successfully (mock)",
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown core error",
+    };
+  }
+}

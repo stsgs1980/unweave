@@ -3,13 +3,26 @@
  */
 
 declare module "@unweave/core" {
-  export function listReferences(): Promise<any[]>;
+  export function listReferences(): Promise<string[]>;
 }
 
 declare module "@unweave/core/pipeline" {
-  export function runPipeline(options: any): Promise<{
-    success: boolean;
-    data?: any;
-    error?: string;
-  }>;
+  export function pipeline(
+    urls: string | string[],
+    options?: any,
+  ): Promise<
+    Array<{
+      url: string;
+      success: boolean;
+      extracted?: any;
+      analysis?: any;
+      spec?: any;
+      generated?: any;
+      error?: string;
+    }>
+  >;
+
+  export function runPipeline(
+    options: any,
+  ): Promise<{ success: boolean; data?: any; error?: string }>;
 }

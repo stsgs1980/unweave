@@ -3,11 +3,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createJob, updateJob } from "@/lib/jobStore";
+import { randomUUID } from "crypto";
 
 /**
- * Handles POST requests to start the extraction pipeline.
+ * Handles POST requests to start the extraction pipeline in the background.
  * @param {NextRequest} request - The incoming request object.
- * @returns {Promise<NextResponse>} A JSON response indicating success or failure.
+ * @returns {Promise<NextResponse>} A JSON response with the job ID.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -18,27 +20,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "[FAIL] URL is required" }, { status: 400 });
     }
 
-    console.log(`[INFO] Starting extraction for: ${url}`);
+    const jobId = randomUUID();
+    createJob(jobId);
 
-    // Импортируем функцию пайплайна из ядра.
-    const { runPipeline } = await import("@unweave/core/pipeline");
+    // Запускаем пайплайн в фоне, не блокируя ответ.
+    // `void` используется, чтобы сказать линтеру, что мы намеренно не используем await.
+    void (async () => {
+      try {
+        updateJob(jobId, { status: "processing", progress: 10 });
 
-    // Запускаем процесс экстракции.
-    const result = await runPipeline({ url, outputDir: "extracted_data" });
+        // Импортируем реальную функцию pipeline из ядра
+        const { pipeline } = await import("@unweave/core/pipeline");
+        updateJob(jobId, { progress: 50 });
 
-    if (!result.success) {
-      const errorMessage = result.error || "Extraction failed in core";
-      return NextResponse.json({ error: `[FAIL] ${errorMessage}` }, { status: 500 });
-    }
+        // Вызываем реальный пайплайн
+        const results = await pipeline(url, {});
+        const result = results[0]; // pipeline всегда возвращает массив
 
-    return NextResponse.json({
-      success: true,
-      message: "[OK] Extraction completed successfully",
-      data: result.data,
-    });
+        if (result.success) {
+          updateJob(jobId, {
+            status: "completed",
+            progress: 100,
+            result, // Используем сокращенную форму (shorthand)
+          });
+        } else {
+          // Убрали throw, обрабатываем ошибку напрямую
+          const errorMessage = result.error || "Extraction failed in core";
+          updateJob(jobId, { status: "failed", error: errorMessage });
+          return;
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        updateJob(jobId, { status: "failed", error: errorMessage });
+      }
+    })();
+
+    return NextResponse.json({ success: true, jobId });
   } catch (error) {
-    console.error("[ERROR] Extraction failed:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: `[FAIL] ${errorMessage}` }, { status: 500 });
+    console.error("[ERROR] Failed to start extraction:", error);
+    return NextResponse.json({ error: "[FAIL] Internal Server Error" }, { status: 500 });
   }
 }
