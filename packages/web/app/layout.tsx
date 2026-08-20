@@ -3,7 +3,8 @@ import React from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import CommandPalette from "@/components/CommandPalette";
-import Navbar from "@/components/Navbar"; // <-- Добавлен импорт
+import Navbar from "@/components/Navbar";
+import { Providers } from "@/components/providers"; // <-- Добавлен импорт
 import "./globals.css";
 
 const inter = Inter({
@@ -41,10 +42,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem={false}
           disableTransitionOnChange
         >
-          {/* Добавляем навигацию глобально */}
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <CommandPalette />
+          <Providers>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <CommandPalette />
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

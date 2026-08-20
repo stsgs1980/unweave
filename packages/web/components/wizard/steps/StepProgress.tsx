@@ -1,75 +1,99 @@
-"use client";
-import React, { useEffect, useState, useRef } from "react";
-import { useWizardStore } from "@/store/wizard-store";
+'use client';
+import React, { useEffect, useState, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useWizardStore } from '@/store/wizard-store';
 
-/**
- * Renders Step 3 of the extraction wizard: Progress tracking.
- * @returns {React.JSX.Element} The rendered step component.
- */
 export default function StepProgress() {
-  const { url, setJobId, setStep, reset } = useWizardStore();
-  const [error, setError] = useState<string | null>(null);
+  const { url, setJobId, setStep } = useWizardStore();
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState("Initializing...");
+  const [message, setMessage] = useState('Initializing...');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Хук, чтобы предотвратить двойной запуск в React Strict Mode
-  const hasStarted = useRef(false);
-
-  useEffect(() => {
-    if (hasStarted.current) return;
-    hasStarted.current = true;
-
-    const startExtraction = async () => {
-      try {
-        const res = await fetch("/api/extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        });
-        const data = await res.json();
-        if (data.jobId) {
-          setJobId(data.jobId);
-          const interval = setInterval(async () => {
-            const statusRes = await fetch(`/api/status/${data.jobId}`);
-            const statusData = await statusRes.json();
-
-            if (statusData.progress) setProgress(statusData.progress);
-            if (statusData.result?.message) setMessage(statusData.result.message);
-
-            if (statusData.status === "completed") {
-              clearInterval(interval);
-              setStep("result");
-            } else if (statusData.status === "failed") {
-              clearInterval(interval);
-              setError(statusData.error || "Extraction failed");
-            }
-          }, 1000);
-        }
-      } catch (err) {
-        setError("Failed to start job");
+  const mutation = useMutation({
+    mutationFn: async (targetUrl: string) => {
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.jobId) {
+        throw new Error(data.error || 'Failed to start extraction');
       }
+      return data.jobId;
+    },
+    onSuccess: (jobId) => {
+      setJobId(jobId);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+      setStep('url');
+    },
+  });
+
+  // Сброс мутации при смене URL или входе в шаг
+  useEffect(() => {
+    mutation.reset();
+  }, [url, mutation]);
+
+  // Запуск мутации только один раз для текущего URL
+  useEffect(() => {
+    if (mutation.isIdle) {
+      mutation.mutate(url);
+    }
+  }, [mutation, url]);
+
+  // Polling с AbortController
+  useEffect(() => {
+    if (!mutation.data) return;
+
+    const jobId = mutation.data;
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    const interval = setInterval(async () => {
+      try {
+        const statusRes = await fetch(`/api/status/${jobId}`, { signal });
+        if (!statusRes.ok) return;
+        const statusData = await statusRes.json();
+
+        if (statusData.progress) setProgress(statusData.progress);
+        if (statusData.result?.message) setMessage(statusData.result.message);
+
+        if (statusData.status === 'completed') {
+          clearInterval(interval);
+          toast.success('Extraction completed successfully!');
+          setStep('result');
+        } else if (statusData.status === 'failed') {
+          clearInterval(interval);
+          toast.error(statusData.error || 'Extraction failed');
+          setStep('url');
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        // ignore network errors during polling
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      abortControllerRef.current?.abort();
     };
-    startExtraction();
-  }, [url, setJobId, setStep]);
+  }, [mutation.data, setStep]);
 
   return (
     <div className="space-y-4 text-center">
-      <h2 className="text-lg font-semibold text-foreground">Extracting...</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {mutation.isPending ? 'Starting pipeline...' : 'Extracting...'}
+      </h2>
       <div className="h-2 w-full rounded-full bg-muted">
         <div
           className="h-2 rounded-full bg-primary transition-all duration-500"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <p className="text-sm text-muted-foreground">
-        {message} ({progress}%)
-      </p>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {error && (
-        <button onClick={reset} className="text-sm text-muted-foreground hover:underline">
-          Close
-        </button>
-      )}
+      <p className="text-sm text-muted-foreground">{message} ({progress}%)</p>
     </div>
   );
 }

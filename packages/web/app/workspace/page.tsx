@@ -4,16 +4,15 @@
  * @file Workspace page for viewing extraction results.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ComponentTree from "./ComponentTree";
 import CodePreview from "./CodePreview";
 
 /**
- * Renders the split-view workspace layout.
- * @returns The workspace page.
+ * Inner component that uses useSearchParams (requires Suspense boundary).
  */
-export default function WorkspacePage() {
+function WorkspaceContent() {
   const searchParams = useSearchParams();
   const jobId = searchParams.get("jobId");
 
@@ -75,5 +74,23 @@ export default function WorkspacePage() {
         </section>
       </div>
     </main>
+  );
+}
+
+/**
+ * Renders the split-view workspace layout with Suspense boundary.
+ * @returns The workspace page.
+ */
+export default function WorkspacePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
+      <WorkspaceContent />
+    </Suspense>
   );
 }

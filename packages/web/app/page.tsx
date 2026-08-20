@@ -5,12 +5,14 @@
  * @description Renders the initial dashboard layout matching the UI reference.
  */
 
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import ExtractInput from "@/components/dashboard/ExtractInput";
 import StatsCard from "@/components/dashboard/StatsCard";
 import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
 import ExtractWizard from "@/components/wizard/ExtractWizard";
-import LivePipelineWidget from "@/components/dashboard/LivePipelineWidget"; // <-- Добавлен импорт
+import LivePipelineWidget from "@/components/dashboard/LivePipelineWidget";
 import { useUIStore } from "@/store/ui-store";
 
 /**
@@ -18,27 +20,33 @@ import { useUIStore } from "@/store/ui-store";
  * @returns The rendered dashboard page.
  */
 export default function Dashboard() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const isWizardOpen = useUIStore((state) => state.isWizardOpen);
 
-  useEffect(() => {
-    const fetchProjects = async (): Promise<void> => {
-      try {
-        const response = await fetch("/api/projects");
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data);
-        }
-      } catch (error) {
-        console.error("[FAIL] Failed to load projects:", error);
-      } finally {
-        setIsLoading(false);
+  // Используем TanStack Query для получения проектов
+  const {
+    data: projects,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Project[]>({
+    queryKey: ["projects"],
+    queryFn: async (): Promise<Project[]> => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) {
+        throw new Error("Failed to load projects");
       }
-    };
+      return response.json();
+    },
+  });
 
-    void fetchProjects();
-  }, []);
+  // Обработка ошибки через эффект (в TanStack Query v5 onError удалён из useQuery)
+  React.useEffect(() => {
+    if (isError && error) {
+      toast.error(error.message);
+    }
+  }, [isError, error]);
+
+  const projectsData = projects ?? [];
 
   return (
     <main className="flex h-[calc(100vh-65px)] flex-col p-8 overflow-y-auto">
@@ -72,7 +80,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="References Saved"
-            value={projects.length}
+            value={projectsData.length}
             description="Synced with Core"
             data={[1, 3, 2, 4, 5, 4, 6, 8]}
           />
@@ -86,7 +94,7 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
           ) : (
-            <RecentProjects projects={projects} />
+            <RecentProjects projects={projectsData} />
           )}
         </div>
       </section>
