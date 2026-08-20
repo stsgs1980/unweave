@@ -10,7 +10,13 @@ export default function StepProgress() {
   const [message, setMessage] = useState("Initializing...");
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const mutation = useMutation({
+  // Деструктурируем стабильные референсы и нужные стейты
+  const {
+    mutate,
+    reset,
+    isPending,
+    data: jobId,
+  } = useMutation({
     mutationFn: async (targetUrl: string) => {
       const res = await fetch("/api/extract", {
         method: "POST",
@@ -23,8 +29,8 @@ export default function StepProgress() {
       }
       return data.jobId;
     },
-    onSuccess: (jobId) => {
-      setJobId(jobId);
+    onSuccess: (id) => {
+      setJobId(id);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -32,23 +38,24 @@ export default function StepProgress() {
     },
   });
 
-  // Сброс мутации при смене URL — предотвращает stale data при возврате к шагу
+  // 1️⃣ ЯВНЫЙ сброс ПЕРЕД новым запуском при смене URL.
+  // `reset` стабильна, поэтому эффект вызовется ТОЛЬКО при смене `url`.
   useEffect(() => {
-    mutation.reset();
-  }, [url, mutation]);
+    reset();
+  }, [url, reset]);
 
-  // Запуск мутации при появлении URL (после reset или при первом монтировании)
+  // 2️⃣ Запуск ПОСЛЕ сброса — гарантирует чистое состояние.
+  // `mutate` стабильна, поэтому эффект вызовется ТОЛЬКО при смене `url`.
   useEffect(() => {
     if (url) {
-      mutation.mutate(url);
+      mutate(url);
     }
-  }, [mutation, url]);
+  }, [url, mutate]);
 
-  // Polling с AbortController — запускается только когда есть jobId
+  // 3️⃣ Polling — только когда есть НОВЫЙ jobId
   useEffect(() => {
-    if (!mutation.data) return;
+    if (!jobId) return;
 
-    const jobId = mutation.data;
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
@@ -79,12 +86,13 @@ export default function StepProgress() {
       clearInterval(interval);
       abortControllerRef.current?.abort();
     };
-  }, [mutation.data]);
+  }, [jobId, setStep]);
 
+  // UI
   return (
     <div className="space-y-4 text-center">
       <h2 className="text-lg font-semibold text-foreground">
-        {mutation.isPending ? "Starting pipeline..." : "Extracting..."}
+        {isPending ? "Starting pipeline..." : "Extracting..."}
       </h2>
       <div className="h-2 w-full rounded-full bg-muted">
         <div
