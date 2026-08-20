@@ -4,69 +4,58 @@
  * @file CodePreview component for displaying generated code.
  */
 
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /**
  * Props for the CodePreview component.
  * @property {string | null} componentName - The name of the selected component.
+ * @property {string | null} jobId - The extraction job ID.
  */
 interface CodePreviewProps {
   componentName: string | null;
+  jobId: string | null;
 }
 
 /**
- * Renders a code preview panel with file tabs.
+ * Renders a code preview panel with file tabs using shadcn/ui Tabs (react-aria-components).
  * @param {CodePreviewProps} props - The component props.
  * @returns The rendered code preview.
  */
-export default function CodePreview({ componentName }: CodePreviewProps) {
-  const searchParams = useSearchParams();
-  const jobId = searchParams.get("jobId");
-
-  const [files, setFiles] = useState<Record<string, string>>({});
-  const [activeFile, setActiveFile] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!componentName || !jobId) {
-      setFiles({});
-      setActiveFile(null);
-      return;
-    }
-
-    const fetchCode = async (): Promise<void> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId, componentName }),
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "[FAIL] Failed to generate code");
-        }
-
-        const newFiles = data.files || {};
-        setFiles(newFiles);
-
-        // Устанавливаем активный файл (приоритет .tsx)
-        const firstFile =
-          Object.keys(newFiles).find((f) => f.endsWith(".tsx")) || Object.keys(newFiles)[0];
-        setActiveFile(firstFile || null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
+export default function CodePreview({ componentName, jobId }: CodePreviewProps) {
+  // Mutation for generating code
+  const {
+    data: files = {},
+    isPending,
+    isError,
+    error,
+    mutate: generateCode,
+  } = useMutation({
+    mutationFn: async (params: { jobId: string; componentName: string }) => {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate code");
       }
-    };
+      return data.files || {};
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
 
-    void fetchCode();
-  }, [componentName, jobId]);
+  // Запускаем генерацию при выборе компонента
+  useEffect(() => {
+    if (componentName && jobId) {
+      generateCode({ jobId, componentName });
+    }
+  }, [componentName, jobId, generateCode]);
 
   const codeBlockClass = [
     "mt-4 rounded-md bg-muted p-4 font-mono text-sm",
@@ -81,36 +70,33 @@ export default function CodePreview({ componentName }: CodePreviewProps) {
     );
   }
 
+  const fileNames = Object.keys(files);
+
   return (
     <div>
       <h2 className="text-lg font-semibold text-foreground">{componentName}</h2>
 
-      {/* Вкладки файлов */}
-      {Object.keys(files).length > 0 && (
-        <div className="mt-2 flex gap-2 border-b border-border">
-          {Object.keys(files).map((fileName) => (
-            <button
-              key={fileName}
-              onClick={() => setActiveFile(fileName)}
-              className={`px-3 py-1 text-xs transition-colors ${
-                activeFile === fileName
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {fileName}
-            </button>
+      {isPending && <p className="mt-4 text-sm text-muted-foreground">Generating code...</p>}
+
+      {isError && <p className="mt-4 text-sm text-destructive">{error?.message}</p>}
+
+      {!isPending && !isError && fileNames.length > 0 && (
+        <Tabs className="mt-4">
+          <TabsList>
+            {fileNames.map((fileName) => (
+              <TabsTrigger key={fileName} className="text-xs">
+                {fileName}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {fileNames.map((fileName) => (
+            <TabsContent key={fileName}>
+              <pre className={codeBlockClass}>
+                <code>{files[fileName as keyof typeof files]}</code>
+              </pre>
+            </TabsContent>
           ))}
-        </div>
-      )}
-
-      {isLoading && <p className="mt-4 text-sm text-muted-foreground">Generating code...</p>}
-      {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
-
-      {!isLoading && !error && activeFile && (
-        <pre className={codeBlockClass}>
-          <code>{files[activeFile]}</code>
-        </pre>
+        </Tabs>
       )}
     </div>
   );

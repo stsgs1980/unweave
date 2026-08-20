@@ -5,7 +5,7 @@
  * @description Renders the initial dashboard layout matching the UI reference.
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ExtractInput from "@/components/dashboard/ExtractInput";
@@ -40,7 +40,7 @@ export default function Dashboard() {
   });
 
   // Обработка ошибки через эффект (в TanStack Query v5 onError удалён из useQuery)
-  React.useEffect(() => {
+  useEffect(() => {
     if (isError && error) {
       toast.error(error.message);
     }

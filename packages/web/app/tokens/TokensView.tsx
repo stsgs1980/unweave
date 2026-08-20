@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useWizardStore } from "@/store/wizard-store";
 
 /**
  * Renders the design tokens fetched from the API.
@@ -13,7 +14,9 @@ import { useSearchParams } from "next/navigation";
  */
 export default function TokensView() {
   const searchParams = useSearchParams();
-  const jobId = searchParams.get("jobId");
+  // Если в URL нет jobId, берем последний успешный из стора
+  const wizardJobId = useWizardStore((state) => state.jobId);
+  const jobId = searchParams.get("jobId") || wizardJobId;
 
   const [tokens, setTokens] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
