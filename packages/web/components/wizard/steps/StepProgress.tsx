@@ -1,25 +1,25 @@
-'use client';
-import React, { useEffect, useState, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useWizardStore } from '@/store/wizard-store';
+"use client";
+import React, { useEffect, useState, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useWizardStore } from "@/store/wizard-store";
 
 export default function StepProgress() {
   const { url, setJobId, setStep } = useWizardStore();
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState('Initializing...');
+  const [message, setMessage] = useState("Initializing...");
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const mutation = useMutation({
     mutationFn: async (targetUrl: string) => {
-      const res = await fetch('/api/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: targetUrl }),
       });
       const data = await res.json();
       if (!res.ok || !data.jobId) {
-        throw new Error(data.error || 'Failed to start extraction');
+        throw new Error(data.error || "Failed to start extraction");
       }
       return data.jobId;
     },
@@ -28,23 +28,23 @@ export default function StepProgress() {
     },
     onError: (error: Error) => {
       toast.error(error.message);
-      setStep('url');
+      setStep("url");
     },
   });
 
-  // Сброс мутации при смене URL или входе в шаг
+  // Сброс мутации при смене URL — предотвращает stale data при возврате к шагу
   useEffect(() => {
     mutation.reset();
   }, [url, mutation]);
 
-  // Запуск мутации только один раз для текущего URL
+  // Запуск мутации при появлении URL (после reset или при первом монтировании)
   useEffect(() => {
-    if (mutation.isIdle) {
+    if (url) {
       mutation.mutate(url);
     }
   }, [mutation, url]);
 
-  // Polling с AbortController
+  // Polling с AbortController — запускается только когда есть jobId
   useEffect(() => {
     if (!mutation.data) return;
 
@@ -61,18 +61,17 @@ export default function StepProgress() {
         if (statusData.progress) setProgress(statusData.progress);
         if (statusData.result?.message) setMessage(statusData.result.message);
 
-        if (statusData.status === 'completed') {
+        if (statusData.status === "completed") {
           clearInterval(interval);
-          toast.success('Extraction completed successfully!');
-          setStep('result');
-        } else if (statusData.status === 'failed') {
+          toast.success("Extraction completed successfully!");
+          setStep("result");
+        } else if (statusData.status === "failed") {
           clearInterval(interval);
-          toast.error(statusData.error || 'Extraction failed');
-          setStep('url');
+          toast.error(statusData.error || "Extraction failed");
+          setStep("url");
         }
       } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') return;
-        // ignore network errors during polling
+        if (e instanceof DOMException && e.name === "AbortError") return;
       }
     }, 1000);
 
@@ -80,12 +79,12 @@ export default function StepProgress() {
       clearInterval(interval);
       abortControllerRef.current?.abort();
     };
-  }, [mutation.data, setStep]);
+  }, [mutation.data]);
 
   return (
     <div className="space-y-4 text-center">
       <h2 className="text-lg font-semibold text-foreground">
-        {mutation.isPending ? 'Starting pipeline...' : 'Extracting...'}
+        {mutation.isPending ? "Starting pipeline..." : "Extracting..."}
       </h2>
       <div className="h-2 w-full rounded-full bg-muted">
         <div
@@ -93,7 +92,9 @@ export default function StepProgress() {
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <p className="text-sm text-muted-foreground">{message} ({progress}%)</p>
+      <p className="text-sm text-muted-foreground">
+        {message} ({progress}%)
+      </p>
     </div>
   );
 }
