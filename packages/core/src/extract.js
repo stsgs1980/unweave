@@ -10,14 +10,31 @@ export async function extract(url, options = {}) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: options.viewport || { width: 1280, height: 720 },
-    userAgent: options.userAgent,
+    // Подделываем реальный User-Agent, чтобы обходить примитивные блокировки ботов
+    userAgent:
+      options.userAgent ||
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   });
+
   const page = await context.newPage();
 
+  // Блокируем тяжелые ресурсы ТОЛЬКО если не запрошены скриншоты.
+  // Если скриншоты нужны, мы грузим всё (включая картинки), чтобы они попали в кадр.
+  if (!options.screenshot) {
+    await context.route(
+      "**/*.{png,jpg,jpeg,gif,svg,webp,ico,mp4,webm,ogg,mp3,woff,woff2}",
+      (route) => {
+        route.abort();
+      },
+    );
+  }
+
   try {
+    // Используем domcontentloaded, чтобы не виснуть на WebSocket'ах SPA
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    // Wait for any additional settling
+    // Ждем дополнительного селектора, если он передан
     if (options.waitFor) {
       await page.waitForSelector(options.waitFor, { timeout: 10000 }).catch(() => {});
     }
@@ -39,7 +56,8 @@ export async function extract(url, options = {}) {
         const styles = getComputedStyles(document.documentElement);
         for (const [key, value] of Object.entries(styles)) {
           if (key.startsWith("--")) {
-            variables[key] = value.trim();
+            // value может быть undefined, используем безопасный доступ
+            variables[key] = typeof value === "string" ? value.trim() : "";
           }
         }
         return variables;
@@ -64,7 +82,9 @@ export async function extract(url, options = {}) {
                 height: el.getBoundingClientRect().height,
               }
             : null,
-          textContent: el.textContent?.trim().slice(0, 200) || null,
+          // textContent может быть null, используем безопасный доступ
+          textContent:
+            typeof el.textContent === "string" ? el.textContent.trim().slice(0, 200) : null,
         }));
       };
 
@@ -81,7 +101,7 @@ export async function extract(url, options = {}) {
         })),
         meta: {
           viewport: document.querySelector('meta[name="viewport"]')?.content,
-          charset: document.charset,
+          charset: document.characterSet,
           description: document.querySelector('meta[name="description"]')?.content,
         },
       };
