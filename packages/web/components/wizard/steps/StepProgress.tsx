@@ -4,6 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWizardStore } from "@/store/wizard-store";
 
+/**
+ * StepProgress component for the extraction wizard.
+ * Handles mutation lifecycle, polling, and progress display.
+ * @returns {React.JSX.Element} The step progress UI.
+ */
 export default function StepProgress() {
   const { url, setJobId, setStep } = useWizardStore();
   const [progress, setProgress] = useState(0);
@@ -38,13 +43,13 @@ export default function StepProgress() {
     },
   });
 
-  // 1️⃣ ЯВНЫЙ сброс ПЕРЕД новым запуском при смене URL.
+  // [1] ЯВНЫЙ сброс ПЕРЕД новым запуском при смене URL.
   // `reset` стабильна, поэтому эффект вызовется ТОЛЬКО при смене `url`.
   useEffect(() => {
     reset();
   }, [url, reset]);
 
-  // 2️⃣ Запуск ПОСЛЕ сброса — гарантирует чистое состояние.
+  // [2] Запуск ПОСЛЕ сброса — гарантирует чистое состояние.
   // `mutate` стабильна, поэтому эффект вызовется ТОЛЬКО при смене `url`.
   useEffect(() => {
     if (url) {
@@ -52,7 +57,7 @@ export default function StepProgress() {
     }
   }, [url, mutate]);
 
-  // 3️⃣ Polling — только когда есть НОВЫЙ jobId
+  // [3] Polling — только когда есть НОВЫЙ jobId
   useEffect(() => {
     if (!jobId) return;
 
