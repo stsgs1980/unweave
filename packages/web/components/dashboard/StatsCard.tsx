@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AreaChart } from "@tremor/react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 /**
  * Props for the StatsCard component.
@@ -23,15 +24,15 @@ interface StatsCardProps {
  * @returns The rendered stats card.
  */
 export default function StatsCard({ title, value, description, data }: StatsCardProps) {
-  // Форматируем данные для AreaChart (массив объектов)
+  // Format data for AreaChart (array of objects)
   const chartData = data ? data.map((val, i) => ({ index: i, value: val })) : [];
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4 text-card-foreground">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+    <Card className="flex flex-col gap-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         {data && (
-          <div className="h-8 w-20 text-primary">
+          <div className="h-8 w-20">
             <AreaChart
               data={chartData}
               index="index"
@@ -45,9 +46,11 @@ export default function StatsCard({ title, value, description, data }: StatsCard
             />
           </div>
         )}
-      </div>
-      <div className="text-2xl font-bold">{value}</div>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-    </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="text-2xl font-bold">{value}</div>
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      </CardContent>
+    </Card>
   );
 }
