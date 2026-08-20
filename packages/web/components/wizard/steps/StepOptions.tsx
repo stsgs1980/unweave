@@ -7,20 +7,40 @@ import { useWizardStore } from "@/store/wizard-store";
  * @returns {React.JSX.Element} The rendered step component.
  */
 export default function StepOptions() {
-  const { setStep, reset } = useWizardStore();
+  const { setStep, reset, options, setOptions } = useWizardStore();
 
-  const handleStart = async () => {
+  const handleStart = () => {
     setStep("progress");
   };
 
+  const labelClass = "flex items-center gap-2 cursor-pointer text-sm text-muted-foreground";
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Step 2: Options</h2>
-      <div className="space-y-2 text-sm text-muted-foreground">
-        <p>[TODO] Add checkboxes for extraction options here.</p>
-        <p>Extract React Components: Yes</p>
-        <p>Extract Design Tokens: Yes</p>
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold text-foreground">Step 2: Extraction Options</h2>
+
+      <div className="space-y-4">
+        <label className={labelClass}>
+          <input
+            type="checkbox"
+            checked={options.blockMedia}
+            onChange={(e) => setOptions({ blockMedia: e.target.checked })}
+            className="h-4 w-4 rounded border-border"
+          />
+          Fast Mode (Block images/fonts/video)
+        </label>
+
+        <label className={labelClass}>
+          <input
+            type="checkbox"
+            checked={options.screenshot}
+            onChange={(e) => setOptions({ screenshot: e.target.checked })}
+            className="h-4 w-4 rounded border-border"
+          />
+          Capture Screenshots (Full page, Viewport, Mobile)
+        </label>
       </div>
+
       <div className="flex justify-between">
         <button onClick={reset} className="text-sm text-muted-foreground hover:underline">
           Cancel

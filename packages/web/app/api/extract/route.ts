@@ -15,7 +15,7 @@ import { Worker } from "worker_threads";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { url } = body;
+    const { url, options } = body;
 
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "[FAIL] URL is required" }, { status: 400 });
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Правильный способ создания воркера в Next.js (Turbopack/Webpack)
     // Файл extract-worker.ts должен лежать в той же папке, что и route.ts
     const worker = new Worker(new URL("./extract-worker.ts", import.meta.url), {
-      workerData: { url },
+      workerData: { url, options: options || {} },
     });
 
     // Слушаем сообщения от воркера

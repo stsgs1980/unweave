@@ -10,12 +10,11 @@ import { useWizardStore } from "@/store/wizard-store";
  * @returns {React.JSX.Element} The step progress UI.
  */
 export default function StepProgress() {
-  const { url, setJobId, setStep } = useWizardStore();
+  const { url, setJobId, setStep, options } = useWizardStore();
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("Initializing...");
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Деструктурируем стабильные референсы и нужные стейты
   const {
     mutate,
     reset,
@@ -26,7 +25,7 @@ export default function StepProgress() {
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify({ url: targetUrl, options }),
       });
       const data = await res.json();
       if (!res.ok || !data.jobId) {

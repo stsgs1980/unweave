@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWizardStore } from "@/store/wizard-store";
 
 /**
  * Renders the global top navigation bar.
@@ -10,12 +11,13 @@ import { usePathname } from "next/navigation";
  */
 export default function Navbar() {
   const pathname = usePathname();
+  const jobId = useWizardStore((state) => state.jobId);
 
   const links = [
     { href: "/", label: "Dashboard" },
     { href: "/references", label: "References" },
-    { href: "/tokens", label: "Tokens" },
-    { href: "/workspace", label: "Workspace" },
+    { href: jobId ? `/tokens?jobId=${jobId}` : "/tokens", label: "Tokens" },
+    { href: jobId ? `/workspace?jobId=${jobId}` : "/workspace", label: "Workspace" },
   ];
 
   const navClass = "flex items-center gap-6 px-8 py-4 border-b border-border bg-card";
@@ -30,11 +32,10 @@ export default function Navbar() {
       </Link>
       <div className="flex gap-4">
         {links.map((link) => {
-          const isActive =
-            pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+          const isActive = pathname === link.href.split("?")[0];
           return (
             <Link
-              key={link.href}
+              key={link.label}
               href={link.href}
               className={`${linkClass} ${isActive ? activeClass : inactiveClass}`}
             >

@@ -13,7 +13,7 @@ async function run(): Promise<void> {
     return;
   }
 
-  const { url } = workerData as { url: string };
+  const { url, options } = workerData as { url: string; options: any };
 
   try {
     parentPort.postMessage({ type: "progress", progress: 10, message: "Starting pipeline..." });
@@ -26,7 +26,7 @@ async function run(): Promise<void> {
       parentPort?.postMessage({ type: "progress", progress, message });
     };
 
-    const results = await pipeline(url, {}, onProgress);
+    const results = await pipeline(url, options, onProgress);
     const result = results[0];
 
     if (result.success) {
