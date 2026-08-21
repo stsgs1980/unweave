@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createJob, updateJob } from "@/lib/jobStore";
+import { logger } from "@/lib/logger";
 import { randomUUID } from "crypto";
 import { Worker } from "worker_threads";
 
@@ -13,58 +14,71 @@ import { Worker } from "worker_threads";
  * @returns {Promise<NextResponse>} A JSON response with the job ID.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  logger.info("API:Extract", "Received extraction POST request");
   try {
     const body = await request.json();
     const { url, options } = body;
 
     if (!url || typeof url !== "string") {
+      logger.warn("API:Extract", "Invalid or missing URL in request", { body });
       return NextResponse.json({ error: "[FAIL] URL is required" }, { status: 400 });
     }
 
     const jobId = randomUUID();
-    createJob(jobId, url);
+    logger.info("API:Extract", `Generated job ID ${jobId} for URL ${url}`);
+    await createJob(jobId, url);
 
-    // Правильный способ создания воркера в Next.js (Turbopack/Webpack)
-    // Файл extract-worker.ts должен лежать в той же папке, что и route.ts
     const worker = new Worker(new URL("./extract-worker.ts", import.meta.url), {
       workerData: { url, options: options || {} },
     });
+    logger.info("API:Extract", `Worker spawned for job ID ${jobId}`);
 
-    // Слушаем сообщения от воркера
-    worker.on("message", (msg: any) => {
-      if (msg.type === "progress") {
-        updateJob(jobId, {
-          status: "processing",
-          progress: msg.progress,
-          message: msg.message,
-        });
-      } else if (msg.type === "completed") {
-        updateJob(jobId, {
-          status: "completed",
-          progress: 100,
-          result: msg.result,
-        });
-      } else if (msg.type === "failed") {
-        updateJob(jobId, { status: "failed", error: msg.error });
+    // Слушаем сообщения от воркера и обновляем БД
+    worker.on("message", async (msg: any) => {
+      logger.debug("API:Extract", `Worker message for job ${jobId}`, msg);
+      try {
+        if (msg.type === "progress") {
+          await updateJob(jobId, {
+            status: "processing",
+            progress: msg.progress,
+            message: msg.message,
+          });
+        } else if (msg.type === "completed") {
+          await updateJob(jobId, {
+            status: "completed",
+            progress: 100,
+            result: msg.result,
+            message: "Extraction completed",
+          });
+        } else if (msg.type === "failed") {
+          await updateJob(jobId, { status: "failed", error: msg.error });
+        }
+      } catch (dbError) {
+        logger.error("API:Extract", `Failed to update job ${jobId} from worker message`, dbError);
       }
     });
 
-    // Обработка ошибок воркера
     worker.on("error", (err) => {
-      console.error("[Worker Error]:", err);
-      updateJob(jobId, { status: "failed", error: err.message });
+      logger.error("API:Extract", `Worker error for job ${jobId}`, err);
+      updateJob(jobId, { status: "failed", error: err.message }).catch((dbErr) => {
+        logger.error("API:Extract", `Failed to update job ${jobId} on worker error`, dbErr);
+      });
     });
 
-    // Завершение воркера
     worker.on("exit", (code) => {
       if (code !== 0) {
-        console.error(`[Worker] stopped with exit code ${code}`);
+        logger.error(
+          "API:Extract",
+          `Worker stopped with non-zero exit code ${code} for job ${jobId}`,
+        );
+      } else {
+        logger.info("API:Extract", `Worker exited successfully for job ${jobId}`);
       }
     });
 
     return NextResponse.json({ success: true, jobId });
   } catch (error) {
-    console.error("[ERROR] Failed to start extraction:", error);
+    logger.error("API:Extract", "Failed to start extraction pipeline", error);
     return NextResponse.json({ error: "[FAIL] Internal Server Error" }, { status: 500 });
   }
 }

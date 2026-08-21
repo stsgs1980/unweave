@@ -1,12 +1,14 @@
 /**
- * @file In-memory job store with EventEmitter for SSE support.
+ * @file Job store using Prisma (PostgreSQL) and EventEmitter for SSE.
  */
 
 import { EventEmitter } from "events";
+import { prisma } from "./db";
+import { logger } from "./logger";
 
 export interface Job {
   id: string;
-  url?: string; // Добавляем URL для отображения в виджете
+  url?: string;
   status: "pending" | "processing" | "completed" | "failed";
   progress: number;
   message?: string;
@@ -14,52 +16,86 @@ export interface Job {
   error?: string;
 }
 
-const jobs = new Map<string, Job>();
 const emitter = new EventEmitter();
 
 /**
- * Creates a new job and adds it to the store.
+ * Creates a new job in the database.
  * @param {string} id - The unique job ID.
- * @param {string} [url] - The URL being extracted.
- * @returns {Job} The created job object.
+ * @param {string} url - The URL being extracted.
+ * @returns {Promise<Job>} The created job object.
  */
-export function createJob(id: string, url?: string): Job {
-  const job: Job = { id, url, status: "pending", progress: 0 };
-  jobs.set(id, job);
-  emitter.emit("update", job);
-  return job;
+export async function createJob(id: string, url: string): Promise<Job> {
+  logger.info("JobStore", `Creating job ${id} for URL: ${url}`);
+  try {
+    const job = await prisma.job.create({
+      data: { id, url, status: "pending", progress: 0 },
+    });
+    emitter.emit("update", job as Job);
+    logger.info("JobStore", `Job ${id} created successfully`);
+    return job as Job;
+  } catch (error) {
+    logger.error("JobStore", `Failed to create job ${id}`, error);
+    throw error;
+  }
 }
 
 /**
- * Retrieves a job by its ID.
+ * Retrieves a job by its ID from the database.
  * @param {string} id - The job ID.
- * @returns {Job | undefined} The job object or undefined if not found.
+ * @returns {Promise<Job | undefined>} The job object or undefined if not found.
  */
-export function getJob(id: string): Job | undefined {
-  return jobs.get(id);
+export async function getJob(id: string): Promise<Job | undefined> {
+  logger.debug("JobStore", `Fetching job ${id}`);
+  try {
+    const job = await prisma.job.findUnique({ where: { id } });
+    if (!job) {
+      logger.debug("JobStore", `Job ${id} not found`);
+    }
+    return (job as Job) ?? undefined;
+  } catch (error) {
+    logger.error("JobStore", `Failed to fetch job ${id}`, error);
+    throw error;
+  }
 }
 
 /**
- * Retrieves all currently active jobs.
- * @returns {Job[]} Array of active jobs.
+ * Retrieves all currently active jobs from the database.
+ * @returns {Promise<Job[]>} Array of active jobs.
  */
-export function getActiveJobs(): Job[] {
-  return Array.from(jobs.values()).filter(
-    (j) => j.status === "pending" || j.status === "processing",
-  );
+export async function getActiveJobs(): Promise<Job[]> {
+  logger.debug("JobStore", "Fetching active jobs");
+  try {
+    const jobs = await prisma.job.findMany({
+      where: {
+        OR: [{ status: "pending" }, { status: "processing" }],
+      },
+    });
+    logger.debug("JobStore", `Found ${jobs.length} active jobs`);
+    return jobs as Job[];
+  } catch (error) {
+    logger.error("JobStore", "Failed to fetch active jobs", error);
+    throw error;
+  }
 }
 
 /**
- * Updates a job's status and progress, then emits the update.
+ * Updates a job's status and progress in the database, then emits the update.
  * @param {string} id - The job ID.
  * @param {Partial<Job>} updates - The fields to update.
- * @returns {void}
+ * @returns {Promise<void>}
  */
-export function updateJob(id: string, updates: Partial<Job>): void {
-  const job = jobs.get(id);
-  if (job) {
-    Object.assign(job, updates);
-    emitter.emit("update", job);
+export async function updateJob(id: string, updates: Partial<Job>): Promise<void> {
+  logger.info("JobStore", `Updating job ${id}`, updates);
+  try {
+    const job = await prisma.job.update({
+      where: { id },
+      data: updates,
+    });
+    emitter.emit("update", job as Job);
+    logger.info("JobStore", `Job ${id} updated successfully`);
+  } catch (error) {
+    logger.error("JobStore", `Failed to update job ${id}`, error);
+    throw error;
   }
 }
 
@@ -69,6 +105,10 @@ export function updateJob(id: string, updates: Partial<Job>): void {
  * @returns {() => void} Unsubscribe function.
  */
 export function subscribe(cb: (job: Job) => void): () => void {
+  logger.debug("JobStore", "New client subscribed to job updates");
   emitter.on("update", cb);
-  return () => emitter.off("update", cb);
+  return () => {
+    logger.debug("JobStore", "Client unsubscribed from job updates");
+    emitter.off("update", cb);
+  };
 }

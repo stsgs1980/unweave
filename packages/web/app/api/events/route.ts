@@ -4,6 +4,7 @@
 
 import { NextRequest } from "next/server";
 import { subscribe, getActiveJobs, Job } from "@/lib/jobStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Handles GET requests to establish an SSE connection.
@@ -11,6 +12,7 @@ import { subscribe, getActiveJobs, Job } from "@/lib/jobStore";
  * @returns {Response} A streaming response.
  */
 export async function GET(request: NextRequest): Promise<Response> {
+  logger.info("API:Events", "Client connected for SSE stream");
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
@@ -19,25 +21,40 @@ export async function GET(request: NextRequest): Promise<Response> {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
-      // 1. Отправляем текущие активные задачи при подключении
-      sendEvent({ type: "initial", jobs: getActiveJobs() });
+      // Оборачиваем в async функцию, чтобы дождаться ответа от БД (Prisma)
+      (async () => {
+        try {
+          // 1. Отправляем текущие активные задачи при подключении
+          const jobs = await getActiveJobs();
+          logger.info("API:Events", `Sending initial active jobs (${jobs.length}) to client`);
+          sendEvent({ type: "initial", jobs });
 
-      // 2. Подписываемся на будущие обновления
-      const unsubscribe = subscribe((job: Job) => {
-        sendEvent({ type: "update", job });
-      });
+          // 2. Подписываемся на будущие обновления
+          const unsubscribe = subscribe((job: Job) => {
+            logger.debug(
+              "API:Events",
+              `Broadcasting job update for ${job.id} (status: ${job.status})`,
+            );
+            sendEvent({ type: "update", job });
+          });
 
-      // 3. Отправляем heartbeat каждые 15 сек, чтобы соединение не закрывалось
-      const interval = setInterval(() => {
-        controller.enqueue(encoder.encode(`: ping\n\n`));
-      }, 15000);
+          // 3. Отправляем heartbeat каждые 15 сек, чтобы соединение не закрывалось
+          const interval = setInterval(() => {
+            controller.enqueue(encoder.encode(`: ping\n\n`));
+          }, 15000);
 
-      // 4. Отписываемся при закрытии вкладки
-      request.signal.addEventListener("abort", () => {
-        clearInterval(interval);
-        unsubscribe();
-        controller.close();
-      });
+          // 4. Отписываемся при закрытии вкладки
+          request.signal.addEventListener("abort", () => {
+            logger.info("API:Events", "SSE connection aborted/closed by client");
+            clearInterval(interval);
+            unsubscribe();
+            controller.close();
+          });
+        } catch (err) {
+          logger.error("API:Events", "Error in SSE stream", err);
+          controller.close();
+        }
+      })();
     },
   });
 

@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/jobStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Handles GET requests to retrieve job status.
@@ -16,13 +17,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  // Разворачиваем Промис, чтобы получить параметры
   const { id } = await params;
-  const job = getJob(id);
+  logger.debug("API:Status", `Fetching status for job ${id}`);
+  try {
+    const job = await getJob(id);
 
-  if (!job) {
-    return NextResponse.json({ error: "[FAIL] Job not found" }, { status: 404 });
+    if (!job) {
+      logger.warn("API:Status", `Job not found: ${id}`);
+      return NextResponse.json({ error: "[FAIL] Job not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(job);
+  } catch (error) {
+    logger.error("API:Status", `Failed to fetch status for job ${id}`, error);
+    return NextResponse.json({ error: "[FAIL] Internal Server Error" }, { status: 500 });
   }
-
-  return NextResponse.json(job);
 }

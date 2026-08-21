@@ -43,5 +43,11 @@
   "lint-staged": {
     "*.{js,ts,jsx,tsx,md,json,css,html}": "prettier --write",
     "*.{js,ts,jsx,tsx,md}": "eslint --fix"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "prisma"
+    ]
   }
 }

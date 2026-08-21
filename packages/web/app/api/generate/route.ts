@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/jobStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Handles POST requests to generate code for a specific component.
@@ -11,18 +12,25 @@ import { getJob } from "@/lib/jobStore";
  * @returns {Promise<NextResponse>} A JSON response containing the generated files.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  logger.info("API:Generate", "Received generation request");
   try {
     const { jobId, componentName } = await request.json();
 
     if (!jobId || !componentName) {
+      logger.warn("API:Generate", "Missing jobId or componentName in request", {
+        jobId,
+        componentName,
+      });
       return NextResponse.json(
         { error: "[FAIL] Job ID and Component Name are required" },
         { status: 400 },
       );
     }
 
-    const job = getJob(jobId);
+    logger.info("API:Generate", `Fetching job ${jobId} for component ${componentName}`);
+    const job = await getJob(jobId);
     if (!job || !job.result || !job.result.analysis) {
+      logger.warn("API:Generate", `Analysis data not found for job ${jobId}`);
       return NextResponse.json(
         { error: "[FAIL] Analysis data not found for this job" },
         { status: 404 },
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { generateSpec } = await import("@unweave/core/spec");
     const { generate } = await import("@unweave/core/generate");
 
+    logger.info("API:Generate", `Generating spec and code for component ${componentName}`);
     const spec = generateSpec(analysis, {
       componentName,
       componentType: "generic",
@@ -52,9 +61,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ? { [`${componentName}.tsx`]: generatedFiles }
         : generatedFiles;
 
+    logger.info("API:Generate", `Successfully generated code for component ${componentName}`);
     return NextResponse.json({ files });
   } catch (error) {
-    console.error("[ERROR] Code generation failed:", error);
+    logger.error("API:Generate", "Code generation failed", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: `[FAIL] ${errorMessage}` }, { status: 500 });
   }

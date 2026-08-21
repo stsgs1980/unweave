@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/jobStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Handles GET requests to retrieve extraction results.
@@ -17,19 +18,30 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const { id } = await params;
-  const job = getJob(id);
+  logger.info("API:Results", `Fetching results for job ${id}`);
+  try {
+    const job = await getJob(id);
 
-  if (!job) {
-    return NextResponse.json({ error: "[FAIL] Job not found" }, { status: 404 });
+    if (!job) {
+      logger.warn("API:Results", `Job not found: ${id}`);
+      return NextResponse.json({ error: "[FAIL] Job not found" }, { status: 404 });
+    }
+
+    if (job.status !== "completed" || !job.result) {
+      logger.warn(
+        "API:Results",
+        `Job ${id} not completed or results missing (status: ${job.status})`,
+      );
+      return NextResponse.json(
+        { error: "[FAIL] Job not completed or no results available" },
+        { status: 400 },
+      );
+    }
+
+    logger.info("API:Results", `Returning results for job ${id}`);
+    return NextResponse.json(job.result);
+  } catch (error) {
+    logger.error("API:Results", `Failed to fetch results for job ${id}`, error);
+    return NextResponse.json({ error: "[FAIL] Internal Server Error" }, { status: 500 });
   }
-
-  if (job.status !== "completed" || !job.result) {
-    return NextResponse.json(
-      { error: "[FAIL] Job not completed or no results available" },
-      { status: 400 },
-    );
-  }
-
-  // Возвращаем реальные данные, сохраненные ядром
-  return NextResponse.json(job.result);
 }

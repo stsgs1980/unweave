@@ -18,6 +18,7 @@
         "name": "next"
       }
     ],
+    "types": ["node", "next", "next/image-types/global"],
     // Удалили "baseUrl": "."
     "paths": {
       "@/*": ["./*"]
@@ -28,7 +29,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "prisma/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
