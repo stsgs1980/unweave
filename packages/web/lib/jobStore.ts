@@ -100,6 +100,29 @@ export async function updateJob(id: string, updates: Partial<Job>): Promise<void
 }
 
 /**
+ * Cleans up stale jobs by marking pending or processing jobs as failed due to server restart.
+ * @returns {Promise<void>}
+ */
+export async function cleanupStaleJobs(): Promise<void> {
+  logger.info("JobStore", "Cleaning up stale jobs");
+  try {
+    const result = await prisma.job.updateMany({
+      where: {
+        OR: [{ status: "pending" }, { status: "processing" }],
+      },
+      data: {
+        status: "failed",
+        error: "Server restarted",
+      },
+    });
+    logger.info("JobStore", `Cleaned up ${result.count} stale jobs`);
+  } catch (error) {
+    logger.error("JobStore", "Failed to cleanup stale jobs", error);
+    throw error;
+  }
+}
+
+/**
  * Subscribes to job updates.
  * @param {(job: Job) => void} cb - The callback to execute on update.
  * @returns {() => void} Unsubscribe function.

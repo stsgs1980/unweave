@@ -48,6 +48,20 @@ export default function Dashboard() {
 
   const projectsData = projects ?? [];
 
+  // Получаем количество выполненных задач для статистики
+  const { data: stats } = useQuery<{ completedCount: number }>({
+    queryKey: ["stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/stats");
+      if (!response.ok) {
+        throw new Error("Failed to load stats");
+      }
+      return response.json();
+    },
+  });
+
+  const completedCount = stats?.completedCount ?? 0;
+
   return (
     <main className="flex h-[calc(100vh-65px)] flex-col p-8 overflow-y-auto">
       <header className="mb-8">
@@ -68,21 +82,21 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <StatsCard
             title="Components Extracted"
-            value={142}
-            description="+12 this week"
-            data={[10, 15, 12, 20, 18, 25, 30, 28, 35]}
+            value={completedCount}
+            description="Total completed extractions"
+            data={[10, 15, 12, 20, 18, 25, 30, 28, completedCount]}
           />
           <StatsCard
             title="Design Tokens"
-            value={89}
-            description="Updated 2 days ago"
-            data={[5, 8, 10, 9, 12, 15, 14, 18]}
+            value={0}
+            description="Updated recently"
+            data={[0, 0, 0, 0]}
           />
           <StatsCard
             title="References Saved"
             value={projectsData.length}
-            description="Synced with Core"
-            data={[1, 3, 2, 4, 5, 4, 6, 8]}
+            description="Synced with database"
+            data={[1, 3, 2, 4, 5, 4, 6, projectsData.length]}
           />
         </div>
 

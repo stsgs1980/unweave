@@ -3,7 +3,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { subscribe, getActiveJobs, Job } from "@/lib/jobStore";
+import { subscribe, getActiveJobs, cleanupStaleJobs, Job } from "@/lib/jobStore";
 import { logger } from "@/lib/logger";
 
 /**
@@ -24,6 +24,9 @@ export async function GET(request: NextRequest): Promise<Response> {
       // Оборачиваем в async функцию, чтобы дождаться ответа от БД (Prisma)
       (async () => {
         try {
+          // 0. Очищаем зависшие задачи при запуске сервера
+          await cleanupStaleJobs();
+
           // 1. Отправляем текущие активные задачи при подключении
           const jobs = await getActiveJobs();
           logger.info("API:Events", `Sending initial active jobs (${jobs.length}) to client`);
