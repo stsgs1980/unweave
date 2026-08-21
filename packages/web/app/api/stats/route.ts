@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { withDbRetry } from "@/lib/jobStore";
 import { logger } from "@/lib/logger";
 
 /**
@@ -13,9 +14,11 @@ import { logger } from "@/lib/logger";
 export async function GET(): Promise<NextResponse> {
   try {
     logger.info("API:Stats", "Fetching dashboard stats from Prisma");
-    const completedCount = await prisma.job.count({
-      where: { status: "completed" },
-    });
+    const completedCount = await withDbRetry(() =>
+      prisma.job.count({
+        where: { status: "completed" },
+      }),
+    );
 
     return NextResponse.json({
       completedCount,

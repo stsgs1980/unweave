@@ -1,6 +1,29 @@
 import { chromium } from "playwright";
 
 /**
+ * Normalizes viewport options into Playwright width/height object.
+ * @param {string|Object} [viewport] - Viewport mode name or dimensions object
+ * @returns {{width: number, height: number}}
+ */
+function normalizeViewport(viewport) {
+  if (!viewport) return { width: 1280, height: 720 };
+  if (typeof viewport === "object" && viewport.width && viewport.height) {
+    return { width: Number(viewport.width), height: Number(viewport.height) };
+  }
+  if (typeof viewport === "string") {
+    const v = viewport.toLowerCase().trim();
+    if (v === "mobile") return { width: 375, height: 667 };
+    if (v === "tablet") return { width: 768, height: 1024 };
+    if (v === "desktop") return { width: 1280, height: 720 };
+    if (v.includes("x")) {
+      const parts = v.split("x").map(Number);
+      if (parts[0] && parts[1]) return { width: parts[0], height: parts[1] };
+    }
+  }
+  return { width: 1280, height: 720 };
+}
+
+/**
  * Extract UI data from a URL using Playwright
  * @param {string} url - URL to extract from
  * @param {Object} options - Extraction options
@@ -8,8 +31,9 @@ import { chromium } from "playwright";
  */
 export async function extract(url, options = {}) {
   const browser = await chromium.launch({ headless: true });
+  const viewportObj = normalizeViewport(options.viewport);
   const context = await browser.newContext({
-    viewport: options.viewport || { width: 1280, height: 720 },
+    viewport: viewportObj,
     // Подделываем реальный User-Agent, чтобы обходить примитивные блокировки ботов
     userAgent:
       options.userAgent ||
@@ -19,9 +43,16 @@ export async function extract(url, options = {}) {
 
   const page = await context.newPage();
 
+  const wantsScreenshots = Boolean(
+    options.screenshot ||
+    (options.screenshots &&
+      typeof options.screenshots === "object" &&
+      Object.values(options.screenshots).some(Boolean)),
+  );
+
   // Блокируем тяжелые ресурсы ТОЛЬКО если не запрошены скриншоты.
   // Если скриншоты нужны, мы грузим всё (включая картинки), чтобы они попали в кадр.
-  if (!options.screenshot) {
+  if (!wantsScreenshots) {
     await context.route(
       "**/*.{png,jpg,jpeg,gif,svg,webp,ico,mp4,webm,ogg,mp3,woff,woff2}",
       (route) => {
@@ -108,13 +139,23 @@ export async function extract(url, options = {}) {
     });
 
     // Screenshots if requested
-    if (options.screenshot) {
-      const types = options.screenshotTypes || ["viewport"];
+    if (wantsScreenshots) {
+      let types = options.screenshotTypes;
+      if (!types && options.screenshots && typeof options.screenshots === "object") {
+        types = Object.entries(options.screenshots)
+          .filter(([_, active]) => Boolean(active))
+          .map(([key]) => key);
+      }
+      if (!types || types.length === 0) {
+        types = ["viewport"];
+      }
+
       data.screenshots = {};
 
       for (const type of types) {
         switch (type) {
           case "full":
+          case "fullPage":
             data.screenshots.full = await page.screenshot({ fullPage: true, type: "png" });
             break;
           case "viewport":

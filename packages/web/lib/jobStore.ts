@@ -24,7 +24,7 @@ const emitter = new EventEmitter();
  * @param retries
  * @param delay
  */
-async function withDbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 500): Promise<T> {
+export async function withDbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 500): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {

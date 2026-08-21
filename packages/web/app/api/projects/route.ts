@@ -4,11 +4,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { withDbRetry } from "@/lib/jobStore";
 import { logger } from "@/lib/logger";
 
 /**
- *
- * @param rawUrl
+ * Extracts a display hostname or friendly name from a project URL.
+ * @param rawUrl - The raw target URL.
  */
 function getHostOrName(rawUrl?: string): string {
   if (!rawUrl) return "Untitled Project";
@@ -31,42 +32,102 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limitParam = searchParams.get("limit");
     const statusParam = searchParams.get("status");
 
-    const limit = limitParam ? parseInt(limitParam, 10) : 12;
-    const where = statusParam ? { status: statusParam } : {};
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : 12;
+    const limit = Number.isNaN(parsedLimit) ? 12 : parsedLimit;
 
     logger.info("API:Projects", `Fetching recent jobs from Prisma (limit: ${limit})`);
-    const jobs = await prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: Number.isNaN(limit) ? 12 : limit,
-    });
 
-    const projects = jobs.map((job) => {
-      let componentCount = 0;
-      let tokenCount = 0;
-      if (job.result && typeof job.result === "object") {
-        const res = job.result as any;
-        if (Array.isArray(res.analysis?.components)) {
-          componentCount = res.analysis.components.length;
+    const rawJobs = await withDbRetry(async () => {
+      try {
+        if (statusParam) {
+          return await prisma.$queryRaw<any[]>`
+            SELECT 
+              id, 
+              url, 
+              status, 
+              progress, 
+              message, 
+              error, 
+              "createdAt", 
+              "updatedAt",
+              CASE 
+                WHEN result IS NOT NULL AND (result->'analysis'->'components') IS NOT NULL AND jsonb_typeof((result->'analysis'->'components')::jsonb) = 'array'
+                THEN jsonb_array_length((result->'analysis'->'components')::jsonb)
+                ELSE 0 
+              END as "componentCount",
+              CASE 
+                WHEN result IS NOT NULL AND (result->'analysis'->'designSystem'->'colors') IS NOT NULL AND jsonb_typeof((result->'analysis'->'designSystem'->'colors')::jsonb) = 'array'
+                THEN jsonb_array_length((result->'analysis'->'designSystem'->'colors')::jsonb)
+                ELSE 0 
+              END as "tokenCount"
+            FROM "Job"
+            WHERE status = ${statusParam}
+            ORDER BY "createdAt" DESC
+            LIMIT ${limit};
+          `;
         }
-        if (res.analysis?.designSystem?.colors) {
-          tokenCount += res.analysis.designSystem.colors.length;
-        }
+
+        return await prisma.$queryRaw<any[]>`
+          SELECT 
+            id, 
+            url, 
+            status, 
+            progress, 
+            message, 
+            error, 
+            "createdAt", 
+            "updatedAt",
+            CASE 
+              WHEN result IS NOT NULL AND (result->'analysis'->'components') IS NOT NULL AND jsonb_typeof((result->'analysis'->'components')::jsonb) = 'array'
+              THEN jsonb_array_length((result->'analysis'->'components')::jsonb)
+              ELSE 0 
+            END as "componentCount",
+            CASE 
+              WHEN result IS NOT NULL AND (result->'analysis'->'designSystem'->'colors') IS NOT NULL AND jsonb_typeof((result->'analysis'->'designSystem'->'colors')::jsonb) = 'array'
+              THEN jsonb_array_length((result->'analysis'->'designSystem'->'colors')::jsonb)
+              ELSE 0 
+            END as "tokenCount"
+          FROM "Job"
+          ORDER BY "createdAt" DESC
+          LIMIT ${limit};
+        `;
+      } catch (rawError) {
+        logger.warn(
+          "API:Projects",
+          "Falling back to Prisma findMany with metadata select",
+          rawError,
+        );
+        const where = statusParam ? { status: statusParam } : {};
+        return await prisma.job.findMany({
+          where,
+          select: {
+            id: true,
+            url: true,
+            status: true,
+            progress: true,
+            message: true,
+            error: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+        });
       }
-
-      return {
-        id: job.id,
-        name: getHostOrName(job.url),
-        url: job.url || "https://unknown.com",
-        date: job.createdAt.toISOString(),
-        status: job.status,
-        progress: job.progress,
-        message: job.message,
-        error: job.error,
-        componentCount,
-        tokenCount,
-      };
     });
+
+    const projects = rawJobs.map((job) => ({
+      id: job.id,
+      name: getHostOrName(job.url),
+      url: job.url || "https://unknown.com",
+      date: new Date(job.createdAt).toISOString(),
+      status: job.status,
+      progress: job.progress,
+      message: job.message,
+      error: job.error,
+      componentCount: Number(job.componentCount || 0),
+      tokenCount: Number(job.tokenCount || 0),
+    }));
 
     logger.info("API:Projects", `Successfully fetched ${projects.length} recent projects`);
     return NextResponse.json(projects);
