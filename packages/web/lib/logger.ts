@@ -5,7 +5,8 @@
 type LogLevel = "info" | "warn" | "error" | "debug";
 
 /**
- *
+ * Formats the current date and time as an ISO string.
+ * @returns {string} The formatted ISO timestamp string.
  */
 function formatTimestamp(): string {
   return new Date().toISOString();
