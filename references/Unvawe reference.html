@@ -1,0 +1,2468 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UI Extractor Pro — Redesign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============ DESIGN TOKENS ============ */
+      :root {
+        --bg: #0b0b10;
+        --bg-soft: #101017;
+        --card: #15151d;
+        --card-2: #1b1b26;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-2: rgba(255, 255, 255, 0.12);
+        --text: #eceaf4;
+        --muted: #8f8da3;
+        --accent: #6366f1;
+        --accent-2: #8b5cf6;
+        --pink: #d946ef;
+        --grad: linear-gradient(135deg, #6366f1, #8b5cf6 55%, #d946ef);
+        --green: #10b981;
+        --amber: #f59e0b;
+        --red: #ef4444;
+        --blue: #38bdf8;
+        --r: 14px;
+        --r-sm: 10px;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --mono: "JetBrains Mono", monospace;
+      }
+      [data-theme="light"] {
+        --bg: #f5f6fb;
+        --bg-soft: #ffffff;
+        --card: #ffffff;
+        --card-2: #f1f2f9;
+        --border: rgba(15, 23, 42, 0.08);
+        --border-2: rgba(15, 23, 42, 0.14);
+        --text: #101223;
+        --muted: #5c6178;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        overflow: hidden;
+      }
+      .ic {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-2);
+        border-radius: 4px;
+      }
+
+      /* ============ LAYOUT ============ */
+      .app {
+        display: flex;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 248px;
+        flex: none;
+        background: var(--bg-soft);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        transition: width 0.25s;
+      }
+      .sidebar.collapsed {
+        width: 72px;
+      }
+      .sidebar.collapsed .lbl,
+      .sidebar.collapsed .side-sec,
+      .sidebar.collapsed .user-meta,
+      .sidebar.collapsed .logo-txt {
+        display: none;
+      }
+      .side-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 16px;
+      }
+      .logo {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--grad);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 800;
+      }
+      .logo-txt {
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: 0.2px;
+      }
+      .nav {
+        padding: 6px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 9px 11px;
+        border-radius: 10px;
+        color: var(--muted);
+        font-weight: 500;
+        width: 100%;
+        text-align: left;
+        transition: 0.15s;
+      }
+      .nav-btn:hover {
+        background: var(--card);
+        color: var(--text);
+      }
+      .nav-btn.active {
+        background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.1));
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.35);
+      }
+      .nav-btn.active .ic {
+        color: var(--accent-2);
+      }
+      .side-sec {
+        padding: 14px 16px 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .side-proj {
+        padding: 0 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .side-proj .nav-btn {
+        padding: 7px 11px;
+        font-size: 13px;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .side-bottom {
+        margin-top: auto;
+        padding: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--grad);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        color: #fff;
+        font-size: 12px;
+      }
+      .user-meta b {
+        display: block;
+        font-size: 13px;
+      }
+      .user-meta span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .topbar {
+        height: 56px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-soft);
+      }
+      .crumb {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .crumb b {
+        color: var(--text);
+      }
+      .search-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 7px 12px;
+        color: var(--muted);
+        min-width: 260px;
+      }
+      .search-btn:hover {
+        border-color: var(--border-2);
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 10px;
+        background: var(--card-2);
+        border: 1px solid var(--border-2);
+        border-radius: 5px;
+        padding: 2px 5px;
+        color: var(--muted);
+      }
+      .top-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        border: 1px solid transparent;
+      }
+      .icon-btn:hover {
+        background: var(--card);
+        color: var(--text);
+        border-color: var(--border);
+      }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 22px 24px 40px;
+      }
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+        animation: fade 0.25s;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* ============ UI PRIMITIVES ============ */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        box-shadow: var(--shadow);
+      }
+      .card-h {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .card-h h3 {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .card-b {
+        padding: 16px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 15px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: 0.15s;
+        border: 1px solid transparent;
+      }
+      .btn-grad {
+        background: var(--grad);
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+      }
+      .btn-grad:hover {
+        filter: brightness(1.1);
+      }
+      .btn-ghost {
+        border-color: var(--border-2);
+        color: var(--text);
+      }
+      .btn-ghost:hover {
+        background: var(--card-2);
+      }
+      .btn-sm {
+        padding: 6px 11px;
+        font-size: 12.5px;
+        border-radius: 8px;
+      }
+      .input {
+        width: 100%;
+        background: var(--bg-soft);
+        border: 1px solid var(--border-2);
+        border-radius: 10px;
+        padding: 10px 13px;
+        outline: none;
+        transition: 0.15s;
+      }
+      .input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 99px;
+        border: 1px solid;
+      }
+      .b-green {
+        color: var(--green);
+        border-color: rgba(16, 185, 129, 0.35);
+        background: rgba(16, 185, 129, 0.1);
+      }
+      .b-amber {
+        color: var(--amber);
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(245, 158, 11, 0.1);
+      }
+      .b-blue {
+        color: var(--blue);
+        border-color: rgba(56, 189, 248, 0.35);
+        background: rgba(56, 189, 248, 0.1);
+      }
+      .b-violet {
+        color: var(--accent-2);
+        border-color: rgba(139, 92, 246, 0.4);
+        background: rgba(139, 92, 246, 0.12);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 12px;
+        border-radius: 99px;
+        border: 1px solid var(--border-2);
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 12.5px;
+        transition: 0.15s;
+      }
+      .chip:hover {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .chip.on {
+        color: var(--text);
+        background: rgba(99, 102, 241, 0.15);
+        border-color: var(--accent);
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .h1 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .sec-t {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 22px 0 10px;
+      }
+
+      /* ============ DASHBOARD ============ */
+      .hero {
+        position: relative;
+        border-radius: 18px;
+        padding: 1px;
+        background: var(--grad);
+        box-shadow: 0 14px 40px rgba(124, 58, 237, 0.25);
+      }
+      .hero-in {
+        background: var(--card);
+        border-radius: 17px;
+        padding: 22px;
+      }
+      .hero-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .hero-row .input {
+        flex: 1;
+        padding: 12px 15px;
+        font-size: 14.5px;
+      }
+      .stats {
+        grid-template-columns: repeat(4, 1fr);
+        margin-top: 16px;
+      }
+      .stat {
+        padding: 15px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .stat .t {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .stat .v {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .stat .d {
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+      .spark {
+        margin-top: 2px;
+        height: 34px;
+        width: 100%;
+      }
+      .dash-2 {
+        grid-template-columns: 2fr 1fr;
+        margin-top: 16px;
+      }
+      .proj-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .pcard {
+        overflow: hidden;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .pcard:hover {
+        transform: translateY(-3px);
+        border-color: var(--border-2);
+      }
+      .shot {
+        height: 120px;
+        position: relative;
+      }
+      .shot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.35));
+      }
+      .sh-a {
+        background:
+          radial-gradient(120px 60px at 20% 30%, rgba(99, 102, 241, 0.7), transparent 70%),
+          radial-gradient(140px 70px at 75% 60%, rgba(217, 70, 239, 0.5), transparent 70%), #171722;
+      }
+      .sh-b {
+        background:
+          radial-gradient(120px 60px at 70% 25%, rgba(56, 189, 248, 0.6), transparent 70%),
+          radial-gradient(120px 70px at 25% 70%, rgba(16, 185, 129, 0.45), transparent 70%), #141a22;
+      }
+      .sh-c {
+        background:
+          radial-gradient(130px 60px at 30% 60%, rgba(245, 158, 11, 0.55), transparent 70%),
+          radial-gradient(120px 60px at 80% 30%, rgba(239, 68, 68, 0.4), transparent 70%), #1d1713;
+      }
+      .sh-d {
+        background:
+          radial-gradient(120px 60px at 60% 40%, rgba(139, 92, 246, 0.6), transparent 70%), #161420;
+      }
+      .pcard .card-b {
+        padding: 13px 15px;
+      }
+      .pcard h4 {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .pcard .url {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 2px 0 9px;
+        font-family: var(--mono);
+      }
+      .pmeta {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .prog {
+        height: 5px;
+        border-radius: 3px;
+        background: var(--card-2);
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .prog i {
+        display: block;
+        height: 100%;
+        background: var(--grad);
+        border-radius: 3px;
+      }
+      /* pipeline stepper */
+      .steps {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 6px 2px;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        flex: 1;
+      }
+      .step .c {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--border-2);
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 12px;
+        flex: none;
+        background: var(--bg-soft);
+      }
+      .step.done .c {
+        background: var(--grad);
+        border-color: transparent;
+        color: #fff;
+      }
+      .step.cur .c {
+        border-color: var(--accent);
+        color: var(--accent-2);
+        animation: pulse 1.6s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+        }
+        70% {
+          box-shadow: 0 0 0 9px rgba(99, 102, 241, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+        }
+      }
+      .step .ln {
+        flex: 1;
+        height: 2px;
+        background: var(--border-2);
+      }
+      .step.done .ln {
+        background: var(--grad);
+      }
+      .step .st b {
+        display: block;
+        font-size: 12.5px;
+      }
+      .step .st span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      /* ============ WIZARD ============ */
+      .wbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .wdot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--border-2);
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 12px;
+        flex: none;
+      }
+      .wdot.cur {
+        border-color: var(--accent);
+        color: var(--accent-2);
+      }
+      .wdot.done {
+        background: var(--grad);
+        border-color: transparent;
+        color: #fff;
+      }
+      .wln {
+        width: 44px;
+        height: 2px;
+        background: var(--border-2);
+      }
+      .wln.done {
+        background: var(--grad);
+      }
+      .wname {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+        margin-right: 8px;
+      }
+      .wstep {
+        display: none;
+      }
+      .wstep.active {
+        display: block;
+        animation: fade 0.25s;
+      }
+      .vp-grid {
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 14px;
+      }
+      .vp {
+        padding: 16px;
+        text-align: center;
+        border: 1px solid var(--border-2);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.15s;
+        color: var(--muted);
+      }
+      .vp:hover {
+        color: var(--text);
+      }
+      .vp.on {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.12);
+        color: var(--text);
+      }
+      .vp .ic {
+        width: 26px;
+        height: 26px;
+        margin: 0 auto 8px;
+      }
+      .vp b {
+        display: block;
+        font-size: 13px;
+      }
+      .vp span {
+        font-size: 11px;
+        font-family: var(--mono);
+      }
+      .opt-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .fmt-grid {
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 10px;
+      }
+      .frame {
+        border: 1px solid var(--border-2);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 14px;
+        background: #fff;
+      }
+      .frame-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #e8e9f1;
+        padding: 8px 12px;
+      }
+      .frame-bar i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .frame-url {
+        flex: 1;
+        background: #fff;
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: #555;
+        padding: 4px 10px;
+      }
+      .frame-body {
+        padding: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        background: #f6f7fb;
+      }
+      .sel {
+        border: 2px dashed transparent;
+        border-radius: 10px;
+        padding: 12px;
+        cursor: pointer;
+        transition: 0.15s;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+      .sel:hover {
+        border-color: #c7c9f4;
+      }
+      .sel.on {
+        border-color: var(--accent);
+        background: #eef0ff;
+      }
+      .sel .ph {
+        height: 12px;
+        border-radius: 4px;
+        background: #dfe1ee;
+        margin-bottom: 8px;
+      }
+      .sel .ph.s {
+        width: 60%;
+      }
+      .sel .btnline {
+        height: 26px;
+        width: 90px;
+        border-radius: 7px;
+        background: var(--grad);
+      }
+      .sum {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .sum .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 13px;
+        background: var(--card-2);
+        border-radius: 10px;
+      }
+      .sum .row b {
+        font-weight: 600;
+      }
+      .sum .row span {
+        color: var(--muted);
+      }
+      .wfoot {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+      }
+
+      /* ============ WORKSPACE ============ */
+      .ws {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        gap: 16px;
+        height: calc(100vh - 148px);
+        min-height: 520px;
+      }
+      .ws-left {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .ws-list {
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .comp-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 11px;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--muted);
+        transition: 0.12s;
+      }
+      .comp-item:hover {
+        background: var(--card-2);
+        color: var(--text);
+      }
+      .comp-item.on {
+        background: rgba(99, 102, 241, 0.14);
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.4);
+      }
+      .comp-item .ci {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--card-2);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .comp-item.on .ci {
+        background: var(--grad);
+        color: #fff;
+      }
+      .comp-item b {
+        font-size: 13px;
+        display: block;
+      }
+      .comp-item span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .ws-right {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .ws-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .ws-tab {
+        padding: 7px 13px;
+        border-radius: 8px;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 12.5px;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+      .ws-tab.on {
+        background: var(--card-2);
+        color: var(--text);
+      }
+      .ws-body {
+        flex: 1;
+        display: grid;
+        overflow: hidden;
+      }
+      .ws-right[data-mode="preview"] .ws-code {
+        display: none;
+      }
+      .ws-right[data-mode="code"] .ws-pv {
+        display: none;
+      }
+      .ws-right[data-mode="split"] .ws-body {
+        grid-template-columns: 1fr 1fr;
+      }
+      .ws-pv {
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+      }
+      .pv-stage {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        padding: 26px;
+        background:
+          radial-gradient(400px 200px at 50% 0%, rgba(99, 102, 241, 0.09), transparent),
+          var(--bg-soft);
+      }
+      .pv-panel {
+        padding: 14px 16px;
+        border-top: 1px solid var(--border);
+      }
+      .pv-ctrl {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .var-btn {
+        padding: 5px 11px;
+        border-radius: 8px;
+        border: 1px solid var(--border-2);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .var-btn.on {
+        color: var(--text);
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.14);
+      }
+      #pv-btn {
+        padding: 10px 22px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: 0.15s;
+        border: 1px solid transparent;
+      }
+      #pv-btn[data-variant="primary"] {
+        background: var(--grad);
+        color: #fff;
+      }
+      #pv-btn[data-variant="secondary"] {
+        background: var(--card-2);
+        color: var(--text);
+        border-color: var(--border-2);
+      }
+      #pv-btn[data-variant="ghost"] {
+        background: transparent;
+        color: var(--accent-2);
+      }
+      #pv-btn[data-state="hover"] {
+        filter: brightness(1.15);
+        transform: translateY(-1px);
+      }
+      #pv-btn[data-state="focus"] {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+      }
+      #pv-btn[data-state="disabled"] {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .ws-code {
+        border-left: 1px solid var(--border);
+        overflow: auto;
+        background: #0d0d14;
+        padding: 16px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.7;
+        color: #c9cbe0;
+      }
+      [data-theme="light"] .ws-code {
+        background: #101223;
+        color: #d6d8ea;
+      }
+      .ws-code .t {
+        color: #8b8ff5;
+      }
+      .ws-code .a {
+        color: #7dd3fc;
+      }
+      .ws-code .s {
+        color: #86efac;
+      }
+      .ws-code .c {
+        color: #5b5e78;
+      }
+      .props {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      .props th {
+        text-align: left;
+        color: var(--muted);
+        font-weight: 600;
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .props td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .props code {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        background: var(--card-2);
+        padding: 2px 6px;
+        border-radius: 5px;
+        color: var(--accent-2);
+      }
+      .a11y {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .a11y div {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+      .a11y .ic {
+        color: var(--green);
+        width: 15px;
+        height: 15px;
+      }
+
+      /* ============ TOKENS ============ */
+      .tok-grid {
+        grid-template-columns: 1.2fr 1fr;
+        align-items: start;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .sw {
+        border-radius: 11px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        transition: 0.15s;
+      }
+      .sw:hover {
+        transform: translateY(-2px);
+      }
+      .sw .c {
+        height: 52px;
+      }
+      .sw .m {
+        padding: 7px 9px;
+        background: var(--card);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+      .sp-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .sp-row .n {
+        width: 74px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .sp-bar {
+        height: 10px;
+        border-radius: 5px;
+        background: var(--grad);
+      }
+      .sp-row .v {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        width: 44px;
+      }
+      .type-row {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .type-row .n {
+        width: 110px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      /* ============ REFERENCES ============ */
+      .ref-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .ref {
+        overflow: hidden;
+        transition: 0.2s;
+        cursor: pointer;
+      }
+      .ref:hover {
+        transform: translateY(-3px);
+        border-color: var(--border-2);
+      }
+      .ref .card-b {
+        padding: 12px 13px;
+      }
+      .ref h4 {
+        font-size: 13px;
+      }
+      .ref .tags {
+        display: flex;
+        gap: 5px;
+        margin: 7px 0 10px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        font-size: 10.5px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        background: var(--card-2);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .stars {
+        color: var(--amber);
+        font-size: 11px;
+        letter-spacing: 1px;
+      }
+      .ref .foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* ============ CMDK / MODAL / TOAST ============ */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 5, 12, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 60;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 12vh 20px 20px;
+      }
+      .overlay.open {
+        display: flex;
+      }
+      .cmdk {
+        width: 600px;
+        max-width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border-2);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: pop 0.18s;
+      }
+      @keyframes pop {
+        from {
+          transform: scale(0.97);
+          opacity: 0;
+        }
+      }
+      .cmdk-in {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .cmdk-in input {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font-size: 15px;
+      }
+      .cmdk-list {
+        max-height: 330px;
+        overflow-y: auto;
+        padding: 8px;
+      }
+      .cmdk-g {
+        padding: 9px 10px 5px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .cmdk-i {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 9px 10px;
+        border-radius: 9px;
+        cursor: pointer;
+        color: var(--muted);
+      }
+      .cmdk-i:hover,
+      .cmdk-i.sel {
+        background: var(--card-2);
+        color: var(--text);
+      }
+      .cmdk-i .r {
+        margin-left: auto;
+      }
+      .cmdk-f {
+        display: flex;
+        gap: 14px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 11px;
+        align-items: center;
+      }
+      .modal {
+        width: 520px;
+        background: var(--card);
+        border: 1px solid var(--border-2);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        animation: pop 0.18s;
+      }
+      .exp-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 9px;
+      }
+      .exp {
+        padding: 13px 8px;
+        text-align: center;
+        border: 1px solid var(--border-2);
+        border-radius: 11px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .exp.on {
+        border-color: var(--accent);
+        color: var(--text);
+        background: rgba(99, 102, 241, 0.12);
+      }
+      .toasts {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        z-index: 99;
+      }
+      .toast {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: var(--card);
+        border: 1px solid var(--border-2);
+        border-left: 3px solid var(--green);
+        border-radius: 11px;
+        padding: 11px 15px;
+        box-shadow: var(--shadow);
+        animation: tin 0.25s;
+        font-weight: 500;
+      }
+      @keyframes tin {
+        from {
+          transform: translateX(20px);
+          opacity: 0;
+        }
+      }
+      @media (max-width: 1100px) {
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .ref-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .dash-2,
+        .tok-grid {
+          grid-template-columns: 1fr;
+        }
+        .ws {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SVG SPRITE -->
+    <svg style="display: none" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="i-home" viewBox="0 0 24 24">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" /></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z" /></symbol>
+      <symbol id="i-cog" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19 12a7 7 0 0 0-.15-1.45l2-1.55-2-3.46-2.35.95a7 7 0 0 0-2.5-1.45L13.6 2.5h-3.2l-.4 2.54a7 7 0 0 0-2.5 1.45l-2.35-.95-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .49.05.97.15 1.45l-2 1.55 2 3.46 2.35-.95a7 7 0 0 0 2.5 1.45l.4 2.54h3.2l.4-2.54a7 7 0 0 0 2.5-1.45l2.35.95 2-3.46-2-1.55c.1-.48.15-.96.15-1.45z"
+        />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+        />
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+      </symbol>
+      <symbol id="i-code" viewBox="0 0 24 24">
+        <path d="M8 8l-5 4 5 4" />
+        <path d="M16 8l5 4-5 4" />
+      </symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24">
+        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="i-cols" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M12 4v16" />
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24">
+        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+      </symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24">
+        <path d="M12 3l2.9 6 6.6.9-4.8 4.6 1.2 6.5-5.9-3.2-5.9 3.2 1.2-6.5L2.5 9.9 9.1 9z" />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 7" /></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M21 12a9 9 0 1 1-3-6.7" />
+        <path d="M21 3v6h-6" />
+      </symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8M12 17v4" />
+      </symbol>
+      <symbol id="i-tablet" viewBox="0 0 24 24">
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <path d="M12 18h.01" />
+      </symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24">
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <path d="M12 18h.01" />
+      </symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24">
+        <path d="M12 2l10 6-10 6L2 8z" />
+        <path d="M2 16l10 6 10-6" />
+      </symbol>
+      <symbol id="i-palette" viewBox="0 0 24 24">
+        <path d="M12 22a10 10 0 1 1 10-10c0 2.2-1.8 3-3.5 3H16a2 2 0 0 0-2 2c0 1.5 1 2.5-2 5z" />
+        <circle cx="7.5" cy="11.5" r="1" />
+        <circle cx="11" cy="7.5" r="1" />
+        <circle cx="15.5" cy="9.5" r="1" />
+      </symbol>
+      <symbol id="i-export" viewBox="0 0 24 24">
+        <path d="M4 13v8h16v-8" />
+        <path d="M12 3v12M8 7l4-4 4 4" />
+      </symbol>
+      <symbol id="i-cmd" viewBox="0 0 24 24">
+        <path
+          d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"
+        />
+      </symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </symbol>
+    </svg>
+
+    <div class="app">
+      <!-- ================= SIDEBAR ================= -->
+      <aside class="sidebar" id="sidebar">
+        <div class="side-top">
+          <div class="logo">U</div>
+          <span class="logo-txt">UI Extractor Pro</span>
+        </div>
+        <nav class="nav">
+          <button class="nav-btn active" data-view="dashboard">
+            <svg class="ic"><use href="#i-home" /></svg><span class="lbl">Дашборд</span>
+          </button>
+          <button class="nav-btn" data-view="extract">
+            <svg class="ic"><use href="#i-zap" /></svg><span class="lbl">Извлечение</span>
+          </button>
+          <button class="nav-btn" data-view="workspace">
+            <svg class="ic"><use href="#i-layers" /></svg><span class="lbl">Проект</span>
+          </button>
+          <button class="nav-btn" data-view="tokens">
+            <svg class="ic"><use href="#i-palette" /></svg><span class="lbl">Токены</span>
+          </button>
+          <button class="nav-btn" data-view="references">
+            <svg class="ic"><use href="#i-book" /></svg><span class="lbl">Референсы</span>
+          </button>
+        </nav>
+        <div class="side-sec">Проекты</div>
+        <div class="side-proj">
+          <button class="nav-btn" data-view="workspace">
+            <span class="dot" style="background: var(--accent-2)"></span
+            ><span class="lbl">shadcn-ui</span>
+          </button>
+          <button class="nav-btn" data-view="workspace">
+            <span class="dot" style="background: var(--blue)"></span
+            ><span class="lbl">linear.app</span>
+          </button>
+          <button class="nav-btn" data-view="workspace">
+            <span class="dot" style="background: var(--amber)"></span
+            ><span class="lbl">vercel.com</span>
+          </button>
+        </div>
+        <div class="side-bottom">
+          <button class="nav-btn" id="collapse">
+            <svg class="ic"><use href="#i-chev-l" /></svg><span class="lbl">Свернуть</span>
+          </button>
+          <div class="user">
+            <div class="avatar">ST</div>
+            <div class="user-meta"><b>stsgs1980</b><span>Pro план</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <!-- ================= TOPBAR ================= -->
+        <header class="topbar">
+          <span class="crumb">UI Extractor / <b id="crumb">Дашборд</b></span>
+          <button class="search-btn" id="open-cmdk">
+            <svg class="ic"><use href="#i-search" /></svg> Поиск...
+            <span style="margin-left: auto"><kbd>⌘K</kbd></span>
+          </button>
+          <div class="top-actions">
+            <button class="icon-btn" id="theme-btn" title="Тема">
+              <svg class="ic"><use href="#i-sun" /></svg>
+            </button>
+            <button class="icon-btn" title="Настройки">
+              <svg class="ic"><use href="#i-cog" /></svg>
+            </button>
+            <div class="avatar">ST</div>
+          </div>
+        </header>
+
+        <main class="content">
+          <!-- ================= DASHBOARD ================= -->
+          <section class="view active" id="view-dashboard">
+            <div class="hero">
+              <div class="hero-in">
+                <div class="h1">Быстрое извлечение</div>
+                <div class="sub">
+                  Вставьте URL — пайплайн извлечёт компоненты, токены и сгенерирует код
+                </div>
+                <div class="hero-row">
+                  <input class="input" placeholder="https://ui.shadcn.com" id="hero-url" />
+                  <button class="btn btn-grad" onclick="goExtract()">
+                    <svg class="ic"><use href="#i-zap" /></svg> Извлечь
+                  </button>
+                </div>
+                <div class="opt-row" style="margin-top: 12px">
+                  <button class="chip on">
+                    <svg class="ic" style="width: 14px; height: 14px">
+                      <use href="#i-monitor" />
+                    </svg>
+                    Скриншоты
+                  </button>
+                  <button class="chip on">
+                    <svg class="ic" style="width: 14px; height: 14px">
+                      <use href="#i-palette" />
+                    </svg>
+                    Дизайн-система
+                  </button>
+                  <button class="chip on">
+                    <svg class="ic" style="width: 14px; height: 14px"><use href="#i-grid" /></svg>
+                    Компоненты
+                  </button>
+                  <button class="chip">
+                    <svg class="ic" style="width: 14px; height: 14px"><use href="#i-code" /></svg>
+                    Storybook
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid stats">
+              <div class="card stat">
+                <span class="t">Проекты</span><span class="v">12</span
+                ><span class="d" style="color: var(--green)">+3 за неделю</span
+                ><svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+                  <polyline
+                    points="0,26 15,22 30,24 45,16 60,18 75,10 100,6"
+                    fill="none"
+                    stroke="var(--accent-2)"
+                    stroke-width="2.5"
+                  />
+                </svg>
+              </div>
+              <div class="card stat">
+                <span class="t">Компоненты</span><span class="v">86</span
+                ><span class="d" style="color: var(--green)">+18 за неделю</span
+                ><svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+                  <polyline
+                    points="0,28 15,25 30,20 45,21 60,14 75,12 100,5"
+                    fill="none"
+                    stroke="var(--blue)"
+                    stroke-width="2.5"
+                  />
+                </svg>
+              </div>
+              <div class="card stat">
+                <span class="t">Токены</span><span class="v">214</span
+                ><span class="d" style="color: var(--green)">+42 за неделю</span
+                ><svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+                  <polyline
+                    points="0,24 15,26 30,18 45,20 60,12 75,14 100,7"
+                    fill="none"
+                    stroke="var(--pink)"
+                    stroke-width="2.5"
+                  />
+                </svg>
+              </div>
+              <div class="card stat">
+                <span class="t">Референсы</span><span class="v">9</span
+                ><span class="d" style="color: var(--muted)">2 избранных</span
+                ><svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+                  <polyline
+                    points="0,20 20,20 40,16 60,16 80,10 100,10"
+                    fill="none"
+                    stroke="var(--amber)"
+                    stroke-width="2.5"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div class="grid dash-2">
+              <div class="card">
+                <div class="card-h">
+                  <h3>Недавние проекты</h3>
+                  <span style="margin-left: auto"
+                    ><button class="btn btn-ghost btn-sm">Все проекты</button></span
+                  >
+                </div>
+                <div class="card-b">
+                  <div class="grid proj-grid">
+                    <div class="card pcard" onclick="show('workspace')">
+                      <div class="shot sh-a"></div>
+                      <div class="card-b">
+                        <h4>shadcn-ui</h4>
+                        <div class="url">ui.shadcn.com</div>
+                        <div class="pmeta">
+                          <span class="badge b-violet">24 компонента</span
+                          ><span class="badge b-blue">58 токенов</span
+                          ><span class="badge b-green">Готово</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card pcard" onclick="show('workspace')">
+                      <div class="shot sh-b"></div>
+                      <div class="card-b">
+                        <h4>linear.app</h4>
+                        <div class="url">linear.app</div>
+                        <div class="pmeta">
+                          <span class="badge b-violet">18 компонентов</span
+                          ><span class="badge b-blue">41 токен</span
+                          ><span class="badge b-green">Готово</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card pcard" onclick="show('workspace')">
+                      <div class="shot sh-c"></div>
+                      <div class="card-b">
+                        <h4>vercel.com</h4>
+                        <div class="url">vercel.com</div>
+                        <div class="pmeta"><span class="badge b-amber">Генерация...</span></div>
+                        <div class="prog"><i style="width: 68%"></i></div>
+                      </div>
+                    </div>
+                    <div class="card pcard" onclick="show('workspace')">
+                      <div class="shot sh-d"></div>
+                      <div class="card-b">
+                        <h4>stripe.com</h4>
+                        <div class="url">stripe.com</div>
+                        <div class="pmeta">
+                          <span class="badge b-violet">31 компонент</span
+                          ><span class="badge b-blue">73 токена</span
+                          ><span class="badge b-green">Готово</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-h">
+                  <h3>Пайплайн: vercel.com</h3>
+                  <span class="badge b-amber" style="margin-left: auto">Выполняется</span>
+                </div>
+                <div class="card-b">
+                  <div class="steps">
+                    <div class="step done">
+                      <div class="c">
+                        <svg class="ic" style="width: 14px; height: 14px">
+                          <use href="#i-check" />
+                        </svg>
+                      </div>
+                      <div class="st"><b>Extract</b><span>12.4s</span></div>
+                      <div class="ln"></div>
+                    </div>
+                    <div class="step done">
+                      <div class="c">
+                        <svg class="ic" style="width: 14px; height: 14px">
+                          <use href="#i-check" />
+                        </svg>
+                      </div>
+                      <div class="st"><b>Analyze</b><span>3.1s</span></div>
+                      <div class="ln"></div>
+                    </div>
+                    <div class="step cur">
+                      <div class="c">S</div>
+                      <div class="st"><b>Spec</b><span>4/8</span></div>
+                      <div class="ln"></div>
+                    </div>
+                    <div class="step">
+                      <div class="c">G</div>
+                      <div class="st"><b>Generate</b><span>ожидание</span></div>
+                    </div>
+                  </div>
+                  <div class="sec-t" style="margin-top: 16px">Логи</div>
+                  <div
+                    class="ws-code"
+                    style="border: none; border-radius: 10px; max-height: 180px; font-size: 11.5px"
+                  >
+                    <span class="c">[12:04:11]</span> <span class="s">[OK]</span> Extract: 214
+                    элементов, 36 CSS-переменных<br />
+                    <span class="c">[12:04:14]</span> <span class="s">[OK]</span> Analyze: 8
+                    компонентов, 73 токена<br />
+                    <span class="c">[12:04:15]</span> Spec: Button ... <span class="s">done</span
+                    ><br />
+                    <span class="c">[12:04:16]</span> Spec: Card ... <span class="s">done</span
+                    ><br />
+                    <span class="c">[12:04:18]</span> Spec: Navigation ...
+                    <span class="a">processing</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= EXTRACT WIZARD ================= -->
+          <section class="view" id="view-extract">
+            <div class="h1">Извлечение из URL</div>
+            <div class="sub">Мастер из 4 шагов — настройте источник, опции и проверьте превью</div>
+            <div class="wbar" style="margin-top: 18px">
+              <div class="wdot cur" data-step="1">1</div>
+              <span class="wname">Источник</span>
+              <div class="wln"></div>
+              <div class="wdot" data-step="2">2</div>
+              <span class="wname">Опции</span>
+              <div class="wln"></div>
+              <div class="wdot" data-step="3">3</div>
+              <span class="wname">Превью</span>
+              <div class="wln"></div>
+              <div class="wdot" data-step="4">4</div>
+              <span class="wname">Запуск</span>
+            </div>
+
+            <div class="card">
+              <div class="card-b">
+                <div class="wstep active" data-step="1">
+                  <label class="sec-t" style="margin-top: 0">URL сайта</label>
+                  <input class="input" value="https://ui.shadcn.com" id="w-url" />
+                  <label class="sec-t">Viewport</label>
+                  <div class="grid vp-grid">
+                    <div class="vp on">
+                      <svg class="ic"><use href="#i-monitor" /></svg><b>Desktop</b
+                      ><span>1280x720</span>
+                    </div>
+                    <div class="vp">
+                      <svg class="ic"><use href="#i-tablet" /></svg><b>Tablet</b
+                      ><span>768x1024</span>
+                    </div>
+                    <div class="vp">
+                      <svg class="ic"><use href="#i-phone" /></svg><b>Mobile</b><span>375x667</span>
+                    </div>
+                  </div>
+                  <label class="sec-t">Фокус на компонентах (опционально)</label>
+                  <input class="input" placeholder="buttons, cards, navigation" />
+                </div>
+
+                <div class="wstep" data-step="2">
+                  <label class="sec-t" style="margin-top: 0">Скриншоты</label>
+                  <div class="opt-row">
+                    <button class="chip on">Full page</button
+                    ><button class="chip on">Viewport</button><button class="chip">Mobile</button
+                    ><button class="chip">Секции</button>
+                  </div>
+                  <label class="sec-t">Формат кода</label>
+                  <div class="grid fmt-grid">
+                    <div class="vp on">
+                      <svg class="ic"><use href="#i-code" /></svg><b>React</b><span>JSX + TS</span>
+                    </div>
+                    <div class="vp">
+                      <svg class="ic"><use href="#i-code" /></svg><b>Vue</b><span>SFC</span>
+                    </div>
+                    <div class="vp">
+                      <svg class="ic"><use href="#i-code" /></svg><b>HTML</b><span>+ CSS</span>
+                    </div>
+                  </div>
+                  <label class="sec-t">Дополнительно</label>
+                  <div class="opt-row">
+                    <button class="chip on">TypeScript</button
+                    ><button class="chip on">Tailwind</button><button class="chip">Storybook</button
+                    ><button class="chip">Тесты</button>
+                  </div>
+                </div>
+
+                <div class="wstep" data-step="3">
+                  <div class="sub" style="margin-bottom: 4px">
+                    Кликните на элементы, которые нужно извлечь как компоненты
+                  </div>
+                  <div class="frame">
+                    <div class="frame-bar">
+                      <i style="background: #ff5f57"></i><i style="background: #febc2e"></i
+                      ><i style="background: #28c840"></i>
+                      <div class="frame-url">ui.shadcn.com</div>
+                    </div>
+                    <div class="frame-body">
+                      <div class="sel on">
+                        <div class="ph s"></div>
+                        <div class="ph"></div>
+                        <div class="btnline"></div>
+                      </div>
+                      <div class="sel">
+                        <div class="ph"></div>
+                        <div class="ph s"></div>
+                        <div class="ph s"></div>
+                      </div>
+                      <div class="sel on">
+                        <div class="btnline"></div>
+                        <div class="ph" style="margin-top: 8px"></div>
+                      </div>
+                      <div class="sel">
+                        <div class="ph s"></div>
+                        <div class="ph"></div>
+                        <div class="ph"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sub" style="margin-top: 10px">
+                    Выбрано компонентов: <b id="sel-count" style="color: var(--accent-2)">2</b>
+                  </div>
+                </div>
+
+                <div class="wstep" data-step="4">
+                  <div class="sum">
+                    <div class="row"><span>Источник</span><b>https://ui.shadcn.com</b></div>
+                    <div class="row"><span>Viewport</span><b>Desktop 1280x720</b></div>
+                    <div class="row"><span>Компоненты</span><b>2 выбрано вручную + авто</b></div>
+                    <div class="row"><span>Формат</span><b>React + TypeScript + Tailwind</b></div>
+                    <div class="row"><span>Скриншоты</span><b>full, viewport</b></div>
+                  </div>
+                </div>
+
+                <div class="wfoot">
+                  <button class="btn btn-ghost" id="wiz-back" style="visibility: hidden">
+                    <svg class="ic"><use href="#i-chev-l" /></svg> Назад
+                  </button>
+                  <button class="btn btn-grad" id="wiz-next">
+                    Далее <svg class="ic"><use href="#i-chev-r" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= WORKSPACE ================= -->
+          <section class="view" id="view-workspace">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px">
+              <div>
+                <div class="h1">shadcn-ui</div>
+                <div class="sub">ui.shadcn.com — извлечено 2 часа назад</div>
+              </div>
+              <span class="badge b-green">Готово</span>
+              <span style="margin-left: auto; display: flex; gap: 8px">
+                <button class="btn btn-ghost btn-sm">
+                  <svg class="ic" style="width: 15px; height: 15px"><use href="#i-refresh" /></svg>
+                  Повторить
+                </button>
+                <button class="btn btn-grad btn-sm" onclick="openExport()">
+                  <svg class="ic" style="width: 15px; height: 15px"><use href="#i-export" /></svg>
+                  Экспорт
+                </button>
+              </span>
+            </div>
+            <div class="ws">
+              <div class="card ws-left">
+                <div class="card-h">
+                  <h3>Компоненты</h3>
+                  <span class="badge b-violet" style="margin-left: auto">24</span>
+                </div>
+                <div style="padding: 10px 10px 0">
+                  <input
+                    class="input"
+                    placeholder="Поиск компонента..."
+                    style="padding: 8px 12px"
+                  />
+                </div>
+                <div class="ws-list">
+                  <div class="comp-item on" data-name="Button">
+                    <div class="ci">
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-grid" /></svg>
+                    </div>
+                    <div><b>Button</b><span>4 варианта</span></div>
+                  </div>
+                  <div class="comp-item" data-name="Card">
+                    <div class="ci">
+                      <svg class="ic" style="width: 15px; height: 15px">
+                        <use href="#i-folder" />
+                      </svg>
+                    </div>
+                    <div><b>Card</b><span>3 варианта</span></div>
+                  </div>
+                  <div class="comp-item" data-name="Navigation">
+                    <div class="ci">
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-home" /></svg>
+                    </div>
+                    <div><b>Navigation</b><span>2 варианта</span></div>
+                  </div>
+                  <div class="comp-item" data-name="Input">
+                    <div class="ci">
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-code" /></svg>
+                    </div>
+                    <div><b>Input</b><span>3 варианта</span></div>
+                  </div>
+                  <div class="comp-item" data-name="Modal">
+                    <div class="ci">
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-cols" /></svg>
+                    </div>
+                    <div><b>Modal</b><span>2 варианта</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card ws-right" data-mode="split" id="ws-right">
+                <div class="ws-tabs">
+                  <button class="ws-tab" data-pmode="code">
+                    <svg class="ic" style="width: 14px; height: 14px"><use href="#i-code" /></svg>
+                    Код
+                  </button>
+                  <button class="ws-tab" data-pmode="preview">
+                    <svg class="ic" style="width: 14px; height: 14px"><use href="#i-eye" /></svg>
+                    Превью
+                  </button>
+                  <button class="ws-tab on" data-pmode="split">
+                    <svg class="ic" style="width: 14px; height: 14px"><use href="#i-cols" /></svg>
+                    Split
+                  </button>
+                  <span style="margin-left: auto; display: flex; gap: 6px">
+                    <button class="icon-btn" title="Копировать" onclick="toast('Код скопирован')">
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-copy" /></svg>
+                    </button>
+                    <button
+                      class="icon-btn"
+                      title="Скачать"
+                      onclick="toast('Файл Button.tsx сохранён')"
+                    >
+                      <svg class="ic" style="width: 15px; height: 15px"><use href="#i-down" /></svg>
+                    </button>
+                  </span>
+                </div>
+                <div class="ws-body">
+                  <div class="ws-pv">
+                    <div class="pv-stage">
+                      <button id="pv-btn" data-variant="primary" data-state="default">
+                        Click me
+                      </button>
+                    </div>
+                    <div class="pv-panel">
+                      <div class="pv-ctrl" id="vars">
+                        <button class="var-btn on" data-variant="primary">Primary</button>
+                        <button class="var-btn" data-variant="secondary">Secondary</button>
+                        <button class="var-btn" data-variant="ghost">Ghost</button>
+                        <span style="width: 1px; background: var(--border-2); margin: 0 4px"></span>
+                        <button class="var-btn on" data-state="default">Default</button>
+                        <button class="var-btn" data-state="hover">Hover</button>
+                        <button class="var-btn" data-state="focus">Focus</button>
+                        <button class="var-btn" data-state="disabled">Disabled</button>
+                      </div>
+                      <div class="sec-t" style="margin: 8px 0 8px">Props</div>
+                      <table class="props">
+                        <tr>
+                          <th>Имя</th>
+                          <th>Тип</th>
+                          <th>Default</th>
+                        </tr>
+                        <tr>
+                          <td><code>variant</code></td>
+                          <td>string</td>
+                          <td><code>primary</code></td>
+                        </tr>
+                        <tr>
+                          <td><code>size</code></td>
+                          <td>string</td>
+                          <td><code>md</code></td>
+                        </tr>
+                        <tr>
+                          <td><code>disabled</code></td>
+                          <td>boolean</td>
+                          <td><code>false</code></td>
+                        </tr>
+                      </table>
+                      <div class="sec-t" style="margin: 12px 0 8px">Доступность</div>
+                      <div class="a11y">
+                        <div>
+                          <svg class="ic"><use href="#i-check" /></svg> Контраст WCAG AA (4.5:1)
+                        </div>
+                        <div>
+                          <svg class="ic"><use href="#i-check" /></svg> :focus-visible виден
+                        </div>
+                        <div>
+                          <svg class="ic"><use href="#i-check" /></svg> Клавиатурная навигация
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ws-code">
+                    <span class="c">// Button.tsx — сгенерировано из ui.shadcn.com</span><br />
+                    <span class="t">import</span> { cva } <span class="t">from</span>
+                    <span class="s">'class-variance-authority'</span>;<br /><br />
+                    <span class="t">const</span> button = cva(<span class="s"
+                      >'rounded-md font-medium'</span
+                    >, {<br />
+                    &nbsp;&nbsp;variants: {<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;variant: {<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;primary:
+                    <span class="s">'bg-[--primary] text-white'</span>,<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;secondary:
+                    <span class="s">'bg-muted border'</span>,<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ghost:
+                    <span class="s">'bg-transparent'</span>,<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;},<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;size: { sm: <span class="s">'h-8 px-3'</span>, md:
+                    <span class="s">'h-10 px-4'</span> },<br />
+                    &nbsp;&nbsp;},<br />
+                    });<br /><br />
+                    <span class="t">export function</span> <span class="a">Button</span>({ variant,
+                    size, ...props }) {<br />
+                    &nbsp;&nbsp;<span class="t">return</span> &lt;<span class="a">button</span>
+                    <span class="a">className</span>={button({ variant, size })} {...props}
+                    /&gt;;<br />
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TOKENS ================= -->
+          <section class="view" id="view-tokens">
+            <div class="h1">Дизайн-токены</div>
+            <div class="sub">Извлечены из shadcn-ui — кликните токен, чтобы скопировать</div>
+            <div class="grid tok-grid" style="margin-top: 16px">
+              <div class="card">
+                <div class="card-h">
+                  <h3>Цвета</h3>
+                  <span class="badge b-violet" style="margin-left: auto">58</span>
+                </div>
+                <div class="card-b">
+                  <div class="swatches">
+                    <div class="sw" onclick="copyTok('#6366f1')">
+                      <div class="c" style="background: #6366f1"></div>
+                      <div class="m">--primary<br />#6366f1</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#8b5cf6')">
+                      <div class="c" style="background: #8b5cf6"></div>
+                      <div class="m">--accent<br />#8b5cf6</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#0b0b10')">
+                      <div class="c" style="background: #0b0b10"></div>
+                      <div class="m">--background<br />#0b0b10</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#eceaf4')">
+                      <div class="c" style="background: #eceaf4"></div>
+                      <div class="m">--foreground<br />#eceaf4</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#10b981')">
+                      <div class="c" style="background: #10b981"></div>
+                      <div class="m">--success<br />#10b981</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#f59e0b')">
+                      <div class="c" style="background: #f59e0b"></div>
+                      <div class="m">--warning<br />#f59e0b</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#ef4444')">
+                      <div class="c" style="background: #ef4444"></div>
+                      <div class="m">--destructive<br />#ef4444</div>
+                    </div>
+                    <div class="sw" onclick="copyTok('#38bdf8')">
+                      <div class="c" style="background: #38bdf8"></div>
+                      <div class="m">--info<br />#38bdf8</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px">
+                <div class="card">
+                  <div class="card-h"><h3>Отступы</h3></div>
+                  <div class="card-b">
+                    <div class="sp-row">
+                      <span class="n">--space-1</span>
+                      <div class="sp-bar" style="width: 8%"></div>
+                      <span class="v">4px</span>
+                    </div>
+                    <div class="sp-row">
+                      <span class="n">--space-2</span>
+                      <div class="sp-bar" style="width: 16%"></div>
+                      <span class="v">8px</span>
+                    </div>
+                    <div class="sp-row">
+                      <span class="n">--space-3</span>
+                      <div class="sp-bar" style="width: 25%"></div>
+                      <span class="v">12px</span>
+                    </div>
+                    <div class="sp-row">
+                      <span class="n">--space-4</span>
+                      <div class="sp-bar" style="width: 33%"></div>
+                      <span class="v">16px</span>
+                    </div>
+                    <div class="sp-row">
+                      <span class="n">--space-6</span>
+                      <div class="sp-bar" style="width: 50%"></div>
+                      <span class="v">24px</span>
+                    </div>
+                    <div class="sp-row">
+                      <span class="n">--space-8</span>
+                      <div class="sp-bar" style="width: 66%"></div>
+                      <span class="v">32px</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-h"><h3>Типографика</h3></div>
+                  <div class="card-b">
+                    <div class="type-row">
+                      <span class="n">--text-xs</span
+                      ><span style="font-size: 12px">12px — подписи, метки</span>
+                    </div>
+                    <div class="type-row">
+                      <span class="n">--text-sm</span
+                      ><span style="font-size: 14px">14px — основной текст</span>
+                    </div>
+                    <div class="type-row">
+                      <span class="n">--text-lg</span
+                      ><span style="font-size: 18px; font-weight: 600">18px — подзаголовки</span>
+                    </div>
+                    <div class="type-row" style="border: none">
+                      <span class="n">--text-2xl</span
+                      ><span style="font-size: 24px; font-weight: 800">24px — заголовки</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= REFERENCES ================= -->
+          <section class="view" id="view-references">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <div>
+                <div class="h1">Библиотека референсов</div>
+                <div class="sub">Сохранённые дизайн-системы для повторной генерации</div>
+              </div>
+              <button
+                class="btn btn-grad"
+                style="margin-left: auto"
+                onclick="toast('Откройте сайт и нажмите Learn')"
+              >
+                <svg class="ic"><use href="#i-book" /></svg> Сохранить сайт
+              </button>
+            </div>
+            <div class="opt-row" style="margin: 16px 0">
+              <button class="chip on">Все (9)</button><button class="chip">Избранные (2)</button
+              ><button class="chip">design-system</button><button class="chip">saas</button
+              ><button class="chip">e-commerce</button>
+            </div>
+            <div class="grid ref-grid">
+              <div class="card ref">
+                <div class="shot sh-a"></div>
+                <div class="card-b">
+                  <h4>shadcn-ui</h4>
+                  <div class="tags">
+                    <span class="tag">design-system</span><span class="tag">react</span>
+                  </div>
+                  <div class="foot">
+                    <span class="stars">★★★★★</span
+                    ><button
+                      class="btn btn-ghost btn-sm"
+                      onclick="toast('Генерация из референса...')"
+                    >
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="card ref">
+                <div class="shot sh-b"></div>
+                <div class="card-b">
+                  <h4>linear.app</h4>
+                  <div class="tags"><span class="tag">saas</span><span class="tag">dark</span></div>
+                  <div class="foot">
+                    <span class="stars">★★★★☆</span
+                    ><button
+                      class="btn btn-ghost btn-sm"
+                      onclick="toast('Генерация из референса...')"
+                    >
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="card ref">
+                <div class="shot sh-c"></div>
+                <div class="card-b">
+                  <h4>vercel.com</h4>
+                  <div class="tags"><span class="tag">minimal</span></div>
+                  <div class="foot">
+                    <span class="stars">★★★★☆</span
+                    ><button
+                      class="btn btn-ghost btn-sm"
+                      onclick="toast('Генерация из референса...')"
+                    >
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="card ref">
+                <div class="shot sh-d"></div>
+                <div class="card-b">
+                  <h4>stripe.com</h4>
+                  <div class="tags">
+                    <span class="tag">fintech</span><span class="tag">gradient</span>
+                  </div>
+                  <div class="foot">
+                    <span class="stars">★★★★★</span
+                    ><button
+                      class="btn btn-ghost btn-sm"
+                      onclick="toast('Генерация из референса...')"
+                    >
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- ================= COMMAND PALETTE ================= -->
+    <div class="overlay" id="cmdk">
+      <div class="cmdk">
+        <div class="cmdk-in">
+          <svg class="ic"><use href="#i-search" /></svg
+          ><input id="cmdk-input" placeholder="Команда или проект..." /><kbd>esc</kbd>
+        </div>
+        <div class="cmdk-list" id="cmdk-list">
+          <div class="cmdk-g">Действия</div>
+          <div class="cmdk-i" onclick="goExtract()">
+            <svg class="ic"><use href="#i-zap" /></svg> Извлечь из URL
+            <span class="r"><kbd>⌘N</kbd></span>
+          </div>
+          <div class="cmdk-i" onclick="openExport()">
+            <svg class="ic"><use href="#i-export" /></svg> Экспорт проекта
+            <span class="r"><kbd>⌘E</kbd></span>
+          </div>
+          <div class="cmdk-i" onclick="toggleTheme()">
+            <svg class="ic"><use href="#i-moon" /></svg> Переключить тему
+          </div>
+          <div class="cmdk-g">Проекты</div>
+          <div class="cmdk-i" onclick="show('workspace')">
+            <span class="dot" style="background: var(--accent-2)"></span> shadcn-ui
+          </div>
+          <div class="cmdk-i" onclick="show('workspace')">
+            <span class="dot" style="background: var(--blue)"></span> linear.app
+          </div>
+          <div class="cmdk-i" onclick="show('workspace')">
+            <span class="dot" style="background: var(--amber)"></span> vercel.com
+          </div>
+          <div class="cmdk-g">Инструменты</div>
+          <div class="cmdk-i" onclick="toast('Сравнение дизайн-систем')">
+            <svg class="ic"><use href="#i-cols" /></svg> Сравнить два сайта
+          </div>
+          <div class="cmdk-i" onclick="show('references')">
+            <svg class="ic"><use href="#i-book" /></svg> Библиотека референсов
+          </div>
+        </div>
+        <div class="cmdk-f">
+          <span><kbd>↑↓</kbd> навигация</span><span><kbd>↵</kbd> выбрать</span
+          ><span><kbd>esc</kbd> закрыть</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= EXPORT MODAL ================= -->
+    <div class="overlay" id="export-modal">
+      <div class="modal">
+        <div class="card-h">
+          <h3>Экспорт проекта</h3>
+          <button class="icon-btn" style="margin-left: auto" onclick="closeExport()">
+            <svg class="ic"><use href="#i-x" /></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sec-t" style="margin-top: 0">Формат</div>
+          <div class="grid exp-grid">
+            <div class="exp on">ZIP</div>
+            <div class="exp">Figma</div>
+            <div class="exp">Storybook</div>
+            <div class="exp">npm</div>
+          </div>
+          <div class="sec-t">Компоненты</div>
+          <div class="opt-row">
+            <button class="chip on">Button</button><button class="chip on">Card</button
+            ><button class="chip on">Navigation</button><button class="chip">Input</button
+            ><button class="chip">Modal</button>
+          </div>
+          <div class="sec-t">Опции</div>
+          <div class="opt-row">
+            <button class="chip on">TypeScript</button><button class="chip on">Tailwind</button
+            ><button class="chip">Тесты</button><button class="chip">Документация</button>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px">
+            <button class="btn btn-ghost" onclick="closeExport()">Отмена</button>
+            <button
+              class="btn btn-grad"
+              onclick="
+                closeExport();
+                toast('Архив project.zip готов');
+              "
+            >
+              <svg class="ic"><use href="#i-export" /></svg> Экспортировать
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <script>
+      const $ = (s) => document.querySelector(s),
+        $$ = (s) => [...document.querySelectorAll(s)];
+      const names = {
+        dashboard: "Дашборд",
+        extract: "Извлечение",
+        workspace: "Проект",
+        tokens: "Токены",
+        references: "Референсы",
+      };
+
+      function show(v) {
+        $$(".view").forEach((x) => x.classList.toggle("active", x.id === "view-" + v));
+        $$(".nav-btn[data-view]").forEach((b) =>
+          b.classList.toggle("active", b.dataset.view === v),
+        );
+        $("#crumb").textContent = names[v];
+        closeCmdk();
+      }
+      $$(".nav-btn[data-view]").forEach((b) => (b.onclick = () => show(b.dataset.view)));
+
+      /* theme */
+      function toggleTheme() {
+        const h = document.documentElement;
+        h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark";
+        $("#theme-btn .ic use").setAttribute(
+          "href",
+          h.dataset.theme === "dark" ? "#i-sun" : "#i-moon",
+        );
+      }
+      $("#theme-btn").onclick = toggleTheme;
+
+      /* sidebar collapse */
+      $("#collapse").onclick = () => $("#sidebar").classList.toggle("collapsed");
+
+      /* wizard */
+      let wstep = 1;
+      function wgo(n) {
+        wstep = Math.max(1, Math.min(4, n));
+        $$(".wstep").forEach((p) => p.classList.toggle("active", +p.dataset.step === wstep));
+        $$(".wdot").forEach((d) => {
+          const s = +d.dataset.step;
+          d.classList.toggle("done", s < wstep);
+          d.classList.toggle("cur", s === wstep);
+        });
+        $$(".wln").forEach((l, i) => l.classList.toggle("done", i + 1 < wstep));
+        $("#wiz-back").style.visibility = wstep === 1 ? "hidden" : "visible";
+        $("#wiz-next").innerHTML =
+          wstep === 4
+            ? '<svg class="ic"><use href="#i-zap"/></svg> Запустить пайплайн'
+            : 'Далее <svg class="ic"><use href="#i-chev-r"/></svg>';
+      }
+      $("#wiz-next").onclick = () => {
+        if (wstep === 4) {
+          show("dashboard");
+          toast("Пайплайн запущен: ui.shadcn.com");
+        } else wgo(wstep + 1);
+      };
+      $("#wiz-back").onclick = () => wgo(wstep - 1);
+      function goExtract() {
+        show("extract");
+        closeCmdk();
+      }
+
+      /* selectable elements / chips / vp / exp (toggle .on) */
+      document.addEventListener("click", (e) => {
+        const sel = e.target.closest(".sel");
+        if (sel) {
+          sel.classList.toggle("on");
+          $("#sel-count").textContent = $$(".sel.on").length;
+          return;
+        }
+        const tog = e.target.closest(".chip,.vp,.exp");
+        if (tog) {
+          tog.classList.toggle("on");
+        }
+      });
+
+      /* workspace */
+      $$(".comp-item").forEach(
+        (c) =>
+          (c.onclick = () => {
+            $$(".comp-item").forEach((x) => x.classList.remove("on"));
+            c.classList.add("on");
+            toast("Компонент: " + c.dataset.name);
+          }),
+      );
+      $$(".ws-tab").forEach(
+        (t) =>
+          (t.onclick = () => {
+            $$(".ws-tab").forEach((x) => x.classList.remove("on"));
+            t.classList.add("on");
+            $("#ws-right").dataset.mode = t.dataset.pmode;
+          }),
+      );
+      $("#vars").addEventListener("click", (e) => {
+        const b = e.target.closest(".var-btn");
+        if (!b) return;
+        const btn = $("#pv-btn");
+        if (b.dataset.variant) {
+          $$("#vars [data-variant]").forEach((x) => x.classList.remove("on"));
+          b.classList.add("on");
+          btn.dataset.variant = b.dataset.variant;
+        }
+        if (b.dataset.state) {
+          $$("#vars [data-state]").forEach((x) => x.classList.remove("on"));
+          b.classList.add("on");
+          btn.dataset.state = b.dataset.state;
+        }
+      });
+
+      /* cmdk */
+      function openCmdk() {
+        $("#cmdk").classList.add("open");
+        setTimeout(() => $("#cmdk-input").focus(), 50);
+      }
+      function closeCmdk() {
+        $("#cmdk").classList.remove("open");
+      }
+      $("#open-cmdk").onclick = openCmdk;
+      $("#cmdk").onclick = (e) => {
+        if (e.target.id === "cmdk") closeCmdk();
+      };
+      $("#cmdk-input").oninput = (e) => {
+        const q = e.target.value.toLowerCase();
+        $$("#cmdk-list .cmdk-i").forEach(
+          (i) => (i.style.display = i.textContent.toLowerCase().includes(q) ? "" : "none"),
+        );
+      };
+
+      /* export */
+      function openExport() {
+        $("#export-modal").classList.add("open");
+        closeCmdk();
+      }
+      function closeExport() {
+        $("#export-modal").classList.remove("open");
+      }
+      $("#export-modal").onclick = (e) => {
+        if (e.target.id === "export-modal") closeExport();
+      };
+
+      /* toasts */
+      function toast(msg) {
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.innerHTML =
+          '<svg class="ic" style="color:var(--green)"><use href="#i-check"/></svg>' + msg;
+        $("#toasts").appendChild(t);
+        setTimeout(() => t.remove(), 2600);
+      }
+      function copyTok(v) {
+        if (navigator.clipboard) navigator.clipboard.writeText(v);
+        toast("Скопировано: " + v);
+      }
+
+      /* hotkeys */
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+          e.preventDefault();
+          $("#cmdk").classList.contains("open") ? closeCmdk() : openCmdk();
+        }
+        if (e.key === "Escape") {
+          closeCmdk();
+          closeExport();
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -19,6 +19,35 @@ export interface Job {
 const emitter = new EventEmitter();
 
 /**
+ * Helper to retry database operations on transient connection pool timeouts.
+ * @param fn
+ * @param retries
+ * @param delay
+ */
+async function withDbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 500): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (
+      retries > 0 &&
+      (error?.code === "P2024" ||
+        error?.message?.includes("connection pool") ||
+        error?.message?.includes("Timed out") ||
+        error?.message?.includes("connection"))
+    ) {
+      logger.warn(
+        "JobStore",
+        `Database connection timeout/pool error, retrying... (${retries} attempts left)`,
+        error,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return withDbRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
+/**
  * Creates a new job in the database.
  * @param {string} id - The unique job ID.
  * @param {string} url - The URL being extracted.
@@ -27,9 +56,11 @@ const emitter = new EventEmitter();
 export async function createJob(id: string, url: string): Promise<Job> {
   logger.info("JobStore", `Creating job ${id} for URL: ${url}`);
   try {
-    const job = await prisma.job.create({
-      data: { id, url, status: "pending", progress: 0 },
-    });
+    const job = await withDbRetry(() =>
+      prisma.job.create({
+        data: { id, url, status: "pending", progress: 0 },
+      }),
+    );
     emitter.emit("update", job as Job);
     logger.info("JobStore", `Job ${id} created successfully`);
     return job as Job;
@@ -47,7 +78,7 @@ export async function createJob(id: string, url: string): Promise<Job> {
 export async function getJob(id: string): Promise<Job | undefined> {
   logger.debug("JobStore", `Fetching job ${id}`);
   try {
-    const job = await prisma.job.findUnique({ where: { id } });
+    const job = await withDbRetry(() => prisma.job.findUnique({ where: { id } }));
     if (!job) {
       logger.debug("JobStore", `Job ${id} not found`);
     }
@@ -65,11 +96,13 @@ export async function getJob(id: string): Promise<Job | undefined> {
 export async function getActiveJobs(): Promise<Job[]> {
   logger.debug("JobStore", "Fetching active jobs");
   try {
-    const jobs = await prisma.job.findMany({
-      where: {
-        OR: [{ status: "pending" }, { status: "processing" }],
-      },
-    });
+    const jobs = await withDbRetry(() =>
+      prisma.job.findMany({
+        where: {
+          OR: [{ status: "pending" }, { status: "processing" }],
+        },
+      }),
+    );
     logger.debug("JobStore", `Found ${jobs.length} active jobs`);
     return jobs as Job[];
   } catch (error) {
@@ -87,10 +120,12 @@ export async function getActiveJobs(): Promise<Job[]> {
 export async function updateJob(id: string, updates: Partial<Job>): Promise<void> {
   logger.info("JobStore", `Updating job ${id}`, updates);
   try {
-    const job = await prisma.job.update({
-      where: { id },
-      data: updates,
-    });
+    const job = await withDbRetry(() =>
+      prisma.job.update({
+        where: { id },
+        data: updates,
+      }),
+    );
     emitter.emit("update", job as Job);
     logger.info("JobStore", `Job ${id} updated successfully`);
   } catch (error) {
@@ -100,22 +135,30 @@ export async function updateJob(id: string, updates: Partial<Job>): Promise<void
 }
 
 /**
- * Cleans up stale jobs by marking pending or processing jobs as failed due to server restart.
+ * Cleans up stale jobs by marking pending or processing jobs inactive for > 5 minutes as failed.
  * @returns {Promise<void>}
  */
 export async function cleanupStaleJobs(): Promise<void> {
-  logger.info("JobStore", "Cleaning up stale jobs");
+  logger.info("JobStore", "Checking and cleaning up stale jobs (>5m inactivity)");
+  const staleThreshold = new Date(Date.now() - 5 * 60 * 1000);
   try {
-    const result = await prisma.job.updateMany({
-      where: {
-        OR: [{ status: "pending" }, { status: "processing" }],
-      },
-      data: {
-        status: "failed",
-        error: "Server restarted",
-      },
-    });
-    logger.info("JobStore", `Cleaned up ${result.count} stale jobs`);
+    const result = await withDbRetry(() =>
+      prisma.job.updateMany({
+        where: {
+          OR: [{ status: "pending" }, { status: "processing" }],
+          updatedAt: { lt: staleThreshold },
+        },
+        data: {
+          status: "failed",
+          error: "Job timed out or server restarted (inactive for > 5 min)",
+        },
+      }),
+    );
+    if (result.count > 0) {
+      logger.info("JobStore", `Cleaned up ${result.count} stale jobs`);
+    } else {
+      logger.debug("JobStore", "No stale jobs found");
+    }
   } catch (error) {
     logger.error("JobStore", "Failed to cleanup stale jobs", error);
     throw error;

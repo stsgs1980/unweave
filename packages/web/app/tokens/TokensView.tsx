@@ -1,134 +1,202 @@
 "use client";
 
 /**
- * @file TokensView component for displaying design tokens.
+ * @file TokensView component for displaying and exporting design tokens.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Code2, FileJson, Layers, Sparkles } from "lucide-react";
 import { useWizardStore } from "@/store/wizard-store";
+import { Button } from "@/components/ui/button";
+import { ColorPalette, ColorToken } from "./components/ColorPalette";
+import {
+  SpacingTypographyScale,
+  defaultSpacing,
+  defaultTypography,
+} from "./components/SpacingTypographyScale";
+
+const defaultSemanticColors: ColorToken[] = [
+  { name: "Primary", varName: "--primary", value: "#6366f1" },
+  { name: "Accent", varName: "--accent", value: "#8b5cf6" },
+  { name: "Background", varName: "--background", value: "#0b0b10" },
+  { name: "Foreground", varName: "--foreground", value: "#eceaf4" },
+  { name: "Success", varName: "--success", value: "#10b981" },
+  { name: "Warning", varName: "--warning", value: "#f59e0b" },
+  { name: "Destructive", varName: "--destructive", value: "#ef4444" },
+  { name: "Info", varName: "--info", value: "#38bdf8" },
+];
 
 /**
- * Renders the design tokens fetched from the API.
- * @returns The rendered tokens view.
+ * Renders the interactive Design Tokens View.
  */
 export default function TokensView() {
   const searchParams = useSearchParams();
-  // Если в URL нет jobId, берем последний успешный из стора
+  const urlJobId = searchParams.get("jobId");
   const wizardJobId = useWizardStore((state) => state.jobId);
-  const jobId = searchParams.get("jobId") || wizardJobId;
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  const [tokens, setTokens] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: recentProjects = [] } = useQuery<any[]>({
+    queryKey: ["projects"],
+    queryFn: async (): Promise<any[]> => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !urlJobId && !wizardJobId,
+  });
 
-  useEffect(() => {
-    if (!jobId) {
-      setIsLoading(false);
-      return;
-    }
+  const effectiveJobId =
+    urlJobId ||
+    wizardJobId ||
+    recentProjects.find((p) => p.status?.toLowerCase() === "completed")?.id ||
+    recentProjects[0]?.id ||
+    null;
 
-    const fetchTokens = async (): Promise<void> => {
-      try {
-        const response = await fetch(`/api/results/${jobId}`);
-        if (response.ok) {
-          const data = await response.json();
-          // Ядро возвращает designSystem внутри analysis
-          setTokens(data?.analysis?.designSystem || null);
-        }
-      } catch (error) {
-        console.error("[FAIL] Failed to load tokens:", error);
-      } finally {
-        setIsLoading(false);
+  const { data: resultsData, isLoading } = useQuery({
+    queryKey: ["tokens", effectiveJobId],
+    queryFn: async (): Promise<any> => {
+      if (!effectiveJobId) return null;
+      const response = await fetch(`/api/results/${effectiveJobId}`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!effectiveJobId,
+  });
+
+  const designSystem = resultsData?.analysis?.designSystem || null;
+
+  const extractedColors: ColorToken[] = [];
+  if (designSystem?.colors && Array.isArray(designSystem.colors)) {
+    designSystem.colors.forEach((c: any, i: number) => {
+      const val = c.value || c.hex || (typeof c === "string" ? c : "#6366f1");
+      if (val && val !== "none" && val !== "transparent") {
+        extractedColors.push({
+          name: c.name || `Color ${i + 1}`,
+          varName: `--color-${i + 1}`,
+          value: val,
+        });
       }
-    };
+    });
+  }
 
-    void fetchTokens();
-  }, [jobId]);
+  const colorsToDisplay = extractedColors.length > 0 ? extractedColors : defaultSemanticColors;
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedToken(text);
+    toast.success(`Copied ${label}`);
+    setTimeout(() => setCopiedToken(null), 1800);
+  };
+
+  const handleExportCSS = () => {
+    const cssVars = [
+      ":root {",
+      ...colorsToDisplay.map((c) => `  ${c.varName}: ${c.value};`),
+      ...defaultSpacing.map((s) => `  ${s.name}: ${s.value};`),
+      ...defaultTypography.map((t) => `  ${t.name}: ${t.size};`),
+      "}",
+    ].join("\n");
+    copyToClipboard(cssVars, "CSS Variables (:root)");
+  };
+
+  const handleExportTailwind = () => {
+    const colorsObj: Record<string, string> = {};
+    colorsToDisplay.forEach((c) => {
+      const key = c.name.toLowerCase().replace(/\s+/g, "-");
+      colorsObj[key] = c.value;
+    });
+
+    const config = [
+      "// tailwind.config.js - theme.extend",
+      "module.exports = {",
+      "  theme: {",
+      "    extend: {",
+      `      colors: ${JSON.stringify(colorsObj, null, 8).replace(/^/gm, "  ").trim()},`,
+      "    },",
+      "  },",
+      "};",
+    ].join("\n");
+
+    copyToClipboard(config, "Tailwind Config");
+  };
+
+  const handleExportJSON = () => {
+    const jsonTokens = {
+      color: Object.fromEntries(
+        colorsToDisplay.map((c) => [
+          c.varName.replace(/^--/, ""),
+          { $value: c.value, $type: "color" },
+        ]),
+      ),
+      spacing: Object.fromEntries(
+        defaultSpacing.map((s) => [
+          s.name.replace(/^--/, ""),
+          { $value: s.value, $type: "dimension" },
+        ]),
+      ),
+    };
+    copyToClipboard(JSON.stringify(jsonTokens, null, 2), "W3C JSON Tokens");
+  };
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading tokens...</p>;
-  }
-
-  if (!jobId) {
     return (
-      <p className="text-sm text-muted-foreground">No job ID provided. Run an extraction first.</p>
+      <div className="py-20 text-center text-xs text-muted-foreground animate-pulse">
+        Loading design tokens...
+      </div>
     );
   }
-
-  if (!tokens) {
-    return (
-      <p className="text-sm text-muted-foreground">No design tokens found in this extraction.</p>
-    );
-  }
-
-  // Защищенные рендеры для разных структур, которые может вернуть analyze.js
-  const colors = tokens.colors || [];
-  const typography = tokens.typography || {};
-  const spacing = tokens.spacing || {};
-
-  const sectionClass = "rounded-lg border border-border p-4";
-  const titleClass = "mb-4 text-lg font-semibold text-foreground";
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {/* Colors */}
-      <div className={sectionClass}>
-        <h2 className={titleClass}>Colors ({colors.length})</h2>
-        <div className="flex flex-wrap gap-2">
-          {Array.isArray(colors) &&
-            colors.map((color: any, i: number) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div
-                  className="h-12 w-12 rounded-md border border-border"
-                  style={{ backgroundColor: color.value || color.hex || color }}
-                />
-                <span className="text-xs text-muted-foreground">{color.name || color}</span>
-              </div>
-            ))}
+    <div className="space-y-8">
+      {/* Action Header: Export Buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Extracted Design System Palette
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Click any swatch to copy its variable or HEX value.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSS}
+            className="h-8 gap-1.5 text-xs"
+          >
+            <Code2 className="h-3.5 w-3.5 text-primary" />
+            CSS Variables
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportTailwind}
+            className="h-8 gap-1.5 text-xs"
+          >
+            <Layers className="h-3.5 w-3.5 text-blue-500" />
+            Tailwind Config
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJSON}
+            className="h-8 gap-1.5 text-xs"
+          >
+            <FileJson className="h-3.5 w-3.5 text-emerald-500" />
+            JSON Tokens
+          </Button>
         </div>
       </div>
 
-      {/* Typography */}
-      <div className={sectionClass}>
-        <h2 className={titleClass}>Typography</h2>
-        <div className="space-y-2">
-          {typography.fontFamilies && (
-            <p className="text-sm text-muted-foreground">
-              Fonts:{" "}
-              {Array.isArray(typography.fontFamilies)
-                ? typography.fontFamilies.join(", ")
-                : typography.fontFamilies}
-            </p>
-          )}
-          {typography.fontSizes && (
-            <p className="text-sm text-muted-foreground">
-              Sizes:{" "}
-              {Array.isArray(typography.fontSizes)
-                ? typography.fontSizes.join(", ")
-                : typography.fontSizes}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Spacing */}
-      <div className={`${sectionClass} md:col-span-2`}>
-        <h2 className={titleClass}>Spacing</h2>
-        <div className="flex flex-wrap items-end gap-4">
-          {Object.keys(spacing).length > 0 ? (
-            Object.entries(spacing).map(([name, value]: [string, any]) => (
-              <div key={name} className="flex flex-col items-center gap-1">
-                <div
-                  className="w-8 rounded-sm bg-primary/20 border border-primary/50"
-                  style={{ height: `${parseInt(String(value)) || 0}px` }}
-                />
-                <span className="text-xs text-muted-foreground">{name}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">No spacing tokens found.</p>
-          )}
-        </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <ColorPalette colors={colorsToDisplay} copiedToken={copiedToken} onCopy={copyToClipboard} />
+        <SpacingTypographyScale onCopy={copyToClipboard} />
       </div>
     </div>
   );

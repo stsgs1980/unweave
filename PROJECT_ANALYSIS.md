@@ -1,56 +1,239 @@
-# PROJECT ANALYSIS: unweave
+# Комплексный анализ проекта: unweave (UI Extractor Pro)
 
-## 1. Current Architecture
-Monorepo managed by pnpm workspaces (v9.x/v11.x). Strict TypeScript & ESLint.
-- `packages/core`: Playwright extraction, programmatic analysis, spec generation, React/Vue/HTML code generation, and diffing (JS + JSDoc).
-- `packages/cli`: Command-line interface (12 commands) and pipeline orchestration.
-- `packages/mcp`: Model Context Protocol server (3 tools: `extract_ui`, `list_references`, `compare_designs`).
-- `packages/web`: Next.js 16 + React 19 + Tailwind CSS v4 dashboard (App Router).
+## 1. Концепция и назначение проекта
 
-## 2. Tech Stack Status
-| Category | Technology | Status |
-|----------|------------|--------|
-| **Web Framework** | Next.js 16 (App Router) | [OK] Working |
-| **UI Base** | shadcn/ui + Tailwind v4 | [WARN] Only 2 components generated (button, bento-grid). UI mostly uses raw Tailwind classes. |
-| **Data Fetching** | TanStack Query v5 | [FAIL] Installed but NOT USED (manual fetch in useEffect). |
-| **Server State** | Zustand | [OK] Working (Wizard state, UI state). |
-| **Background Jobs** | Node.js Worker Threads | [OK] Working (Playwright runs in a separate thread, non-blocking). |
-| **Real-time** | Server-Sent Events (SSE) | [OK] Working (Live Pipeline Stepper on Dashboard). |
-| **Charts/Visuals** | Tremor React | [FAIL] Installed but NOT USED (StatsCards are static). |
-| **Database** | Prisma + SQLite | [FAIL] Missing (Storage is file-system based in core/references.js). |
+**unweave** — платформа для автоматического анализа веб-страниц, извлечения дизайн-систем (Design Tokens), декомпозиции интерфейса на компоненты и генерации готового production-ready кода (React + TypeScript + Tailwind CSS / CVA, Vue SFC, HTML/CSS).
 
-## 3. Completed Milestones
-- [x] Core & CLI: Playwright extraction, diffing, and code generation stabilized. CLI fully functional.
-- [x] Background Processing: Extractions run in Worker Threads (extract-worker.ts). Main Next.js event loop is unblocked.
-- [x] Web Scaffold & Routing: App Router configured with global Navbar, ThemeProvider, and CommandPalette (Cmd+K).
-- [x] Dashboard UI: Hero ExtractInput, StatsCard grid, RecentProjects grid.
-- [x] Real-time Updates: LivePipelineWidget utilizes SSE (/api/events) to show active background jobs instantly.
-- [x] Extract Wizard: 4-step flow (URL -> Options -> Progress -> Result) with framer-motion animations.
-- [x] Workspace UI (Split-view): /workspace route with ComponentTree (left) and CodePreview (right).
-- [x] Core Integration: Web API routes successfully call @unweave/core functions to generate real React code in the Workspace.
-- [x] Tokens & References Pages: Basic UI created for viewing tokens and saved references.
-- [x] MCP Server: Initialized with 3 tools for AI assistant integration (Cursor, Claude).
-- [x] Testing & CI/CD: Vitest setup for core (2 tests). GitHub Actions workflow configured (lint, typecheck, test).
+Проект строится как монорепозиторий под управлением `pnpm workspaces`:
 
-## 4. Immediate Next Steps (The Roadmap)
+- `packages/core`: Ядро на базе Playwright для извлечения стилей, DOM-структуры, сеток, классификации компонентов, формирования спецификаций и генерации кода.
+- `packages/cli`: Консольный интерфейс (12 команд) для автоматизации и CI/CD пайплайнов.
+- `packages/mcp`: Сервер Model Context Protocol для интеграции с AI-ассистентами (Cursor, Claude Desktop).
+- `packages/web`: Полнофункциональное веб-приложение на Next.js 16 (App Router), React 19, Tailwind CSS v4, Prisma ORM (PostgreSQL), TanStack Query v5 и Zustand.
 
-### Phase 1: UI Foundation & Refactoring (Priority: P0)
-[GOAL] Clean up the code, use installed dependencies properly, and polish the existing UI.
-- [ ] Integrate TanStack Query: Replace manual fetch + useEffect with useQuery/useMutation across all pages (Dashboard, Workspace, Tokens, References).
-- [ ] Expand shadcn/ui: Generate and implement missing base components (input, card, dialog, tabs, table, toast).
-- [ ] Integrate Tremor: Replace static numbers in StatsCard.tsx with Tremor's Sparkline or AreaChart.
-- [ ] Add Toasts (Sonner): Implement user feedback for extraction success/failure instead of inline text.
+---
 
-### Phase 2: Advanced Workspace & Features (Priority: P1)
-[GOAL] Deliver the wow factor and core value proposition for users.
-- [ ] Workspace Live Preview: Add an iframe in CodePreview to visually render the generated React/HTML code (Code | Preview | Split tabs).
-- [ ] Component Detail Page: Create a detailed view for a single component (Props table, Variants, Accessibility checklist).
-- [ ] Interactive Token Editor: Upgrade /tokens from read-only to interactive (Color pickers, Spacing sliders) with an Apply to Project button.
-- [ ] Export Dialog: Implement a modal to download the generated code as a ZIP archive (using jszip) or copy to clipboard.
-- [ ] Magic UI Integration: Add subtle animations (e.g., AutoAnimate for the component list, bento-grid for dashboard).
+## 2. Функциональная архитектура по эталонному референсу (`Unvawe reference.html`)
 
-### Phase 3: Persistence & Production (Priority: P2)
-[GOAL] Make the app stateful and ready for multi-user environments.
-- [ ] Database (Prisma + SQLite): Replace file-system storage (references/) with a Prisma database schema (Project, Component, Token, Reference).
-- [ ] Authentication: Implement NextAuth.js or Clerk for user login and project isolation.
-- [ ] Comprehensive Testing: Add unit tests for web components and E2E tests (Playwright) for the extraction pipeline.
+_(Анализ логики, сценариев использования и интерактивного поведения без привязки к декоративному оформлению)_
+
+### 2.1. Глобальная навигация и макет (Layout & Shell)
+
+- **Боковая панель (Sidebar)**:
+  - Переключение между основными представлениями: **Дашборд (Dashboard)**, **Извлечение (Extract Wizard)**, **Проект (Workspace)**, **Токены (Tokens)**, **Референсы (References)**.
+  - Блок «Быстрые проекты» (Quick Projects): список недавних сайтов с цветовыми индикаторами статуса и быстрым переходом в Workspace.
+  - Управление состоянием: кнопка сворачивания панели (Collapsed / Expanded mode) с сохранением состояния в локальном хранилище.
+  - Блок профиля пользователя / плана подписки в нижней части.
+- **Верхняя панель (Topbar)**:
+  - Интерактивный хлебный путь (Breadcrumbs) с отображением текущего раздела и активного проекта.
+  - Глобальный поиск и вызов командной строки (кнопка `⌘K` / `Ctrl+K`).
+  - Быстрые действия: переключение темы (Dark / Light), настройки проекта, профиль пользователя.
+
+---
+
+### 2.2. Дашборд (Dashboard View)
+
+- **Блок быстрого запуска (Quick Extract Hero)**:
+  - Поле ввода URL с валидацией протокола и домена.
+  - Быстрые переключатели опций (Chips): _Скриншоты_, _Дизайн-система_, _Компоненты_, _Storybook_.
+  - Кнопка немедленного запуска извлечения с переходом к мониторингу задачи.
+- **Метрики активности (Stats Cards & Sparklines)**:
+  - 4 ключевых показателя: **Проекты**, **Компоненты**, **Токены**, **Референсы**.
+  - Динамика за период (+N за неделю) и мини-графики тренда (Sparklines).
+- **Сетка недавних проектов (Recent Projects)**:
+  - Карточки ранее проанализированных сайтов: URL, количество распознанных компонентов и токенов, превью/скриншот.
+  - Статусные бейджи: `Completed` (Готово), `Processing` (Генерация / прогресс-бар в реальном времени), `Failed` (Ошибка с возможностью перезапуска).
+  - Клик по карточке открывает соответствующий `jobId` в Workspace.
+- **Виджет активного пайплайна (Live Pipeline Stepper & Terminal Widget)**:
+  - Пошаговый степпер выполнения задачи: **Extract** (извлечение DOM/CSS) → **Analyze** (кластеризация и токены) → **Spec** (формирование спецификаций) → **Generate** (генерация кода).
+  - Отображение длительности каждого шага и статуса (Done / In Progress / Pending).
+  - Встроенный терминал потоковых логов в реальном времени с цветовой дифференциацией событий (OK, Info, Error, Step completion).
+
+---
+
+### 2.3. Мастер извлечения (Extract Wizard — 4 шага)
+
+- **Шаг 1: Источник (Source & Viewport)**:
+  - Ввод целевого URL.
+  - Выбор разрешения экрана (Viewport): _Desktop (1280×720)_, _Tablet (768×1024)_, _Mobile (375×667)_.
+  - Фильтр фокуса на компонентах (опционально, например `buttons, cards, navigation`).
+- **Шаг 2: Опции и форматы (Options & Output)**:
+  - Режим создания скриншотов: _Full page_, _Viewport_, _Mobile_, _Секции_.
+  - Целевой фреймворк/формат кода: _React (JSX/TSX + Tailwind)_, _Vue (SFC)_, _HTML (+ CSS)_.
+  - Дополнительные флаги: _TypeScript_, _Tailwind CSS_, _Storybook stories_, _Автотесты (Vitest/Testing Library)_.
+- **Шаг 3: Интерактивный предпросмотр и выбор компонентов (Preview & Selection)**:
+  - Интерактивный фрейм со страницей или превью секций.
+  - Возможность кликом выбирать конкретные блоки DOM для приоритетного извлечения в качестве компонентов.
+  - Счётчик выбранных элементов (`Выбрано компонентов: N`).
+- **Шаг 4: Сводка и запуск (Summary & Launch)**:
+  - Итоговая карточка конфигурации (URL, Viewport, выбранные компоненты, формат, флаги скриншотов).
+  - Запуск задачи, регистрация в очереди базы данных и перенаправление на страницу отслеживания / Workspace.
+
+---
+
+### 2.4. Рабочее пространство (Workspace Studio)
+
+- **Заголовок проекта**:
+  - Название/URL проекта, время последнего анализа, бейдж статуса.
+  - Действия: «Повторить анализ (Re-run)», «Экспорт проекта (Export Modal)».
+- **Левая панель: Дерево компонентов (Component Explorer)**:
+  - Поисковая строка фильтрации компонентов по имени.
+  - Список извлечённых компонентов (например, `Button`, `Card`, `Navigation`, `Input`, `Modal`) с бейджем количества вариантов (например, `4 варианта`) и иконкой категории.
+  - Выбор активного компонента для инспекции.
+- **Правая панель: Инспектор и среда предпросмотра (Split / Code / Preview)**:
+  - **Переключатель режимов отображения**:
+    - `Code`: полноэкранный редактор сгенерированного кода.
+    - `Preview`: интерактивная сцена рендеринга компонента.
+    - `Split`: двухколоночный режим (Превью слева, Код справа).
+  - **Интерактивная сцена (Preview Stage)**:
+    - Живой рендеринг компонента в изолированном контейнере.
+    - Панель управления вариантами (`Variants`): переключение стилей (Primary, Secondary, Ghost, Outline и др.).
+    - Панель имитации состояний (`States`): Default, Hover, Focus, Disabled, Loading.
+  - **Таблица свойств (Props Specification)**:
+    - Автоматически сгенерированная таблица: Имя пропа (`name`), Тип (`string`, `boolean`, `enum`), Значение по умолчанию (`default`).
+  - **Чек-лист доступности (Accessibility / A11y)**:
+    - Контрастность текста по стандарту WCAG AA (минимум 4.5:1).
+    - Наличие и видимость состояний `:focus-visible`.
+    - Поддержка клавиатурной навигации (`Tab`, `Enter`, `Space`) и ARIA-атрибутов.
+  - **Редактор кода (Code Viewer)**:
+    - Подсветка синтаксиса TypeScript/JSX с использованием CVA (`class-variance-authority`).
+    - Кнопка быстрого копирования кода в буфер обмена с всплывающим уведомлением (Toast).
+    - Кнопка скачивания отдельного файла компонента (например, `Button.tsx`).
+
+---
+
+### 2.5. Дизайн-токены (Design Tokens View)
+
+- **Цветовая палитра (Color Swatches)**:
+  - Сетка карточек с цветом, CSS-переменной (`--primary`, `--accent`, `--background`, `--foreground`, `--success`, `--warning`, `--destructive`, `--info`) и HEX/RGB значением.
+  - Клик по карточке токена копирует значение в буфер обмена.
+- **Шкала отступов (Spacing Scale)**:
+  - Визуальные прогресс-бары с шагом сетки (`--space-1` — 4px, `--space-2` — 8px, `--space-4` — 16px, `--space-8` — 32px и т.д.).
+- **Шкала типографики (Typography Scale)**:
+  - Размеры шрифтов (`--text-xs` .. `--text-2xl`), начертания (font-weight), высота строки (line-height) с пояснением назначения (подписи, основной текст, подзаголовки, заголовки).
+
+---
+
+### 2.6. Библиотека референсов (References Library)
+
+- **Каталог дизайн-систем**:
+  - Карточки эталонных дизайн-систем (`shadcn-ui`, `linear.app`, `vercel.com`, `stripe.com`) с тегами категорий (`design-system`, `saas`, `minimal`, `fintech`), скриншотами и оценкой.
+  - Фильтрация по категориям и избранному.
+  - Действие «Использовать для генерации»: применение стилей референса к новому проекту.
+- **Функция обучения («Learn / Сохранить сайт»)**:
+  - Извлечение паттернов сайта и сохранение в базу референсов для повторного использования.
+
+---
+
+### 2.7. Глобальные модули и вспомогательные инструменты
+
+- **Командная строка (Command Palette `⌘K`)**:
+  - Быстрый переход по всем разделам и недавним проектам.
+  - Быстрые команды: _Извлечь из URL_, _Экспорт проекта_, _Переключить тему_, _Сравнить два сайта (Diffing)_.
+- **Модальное окно экспорта (Export Modal `⌘E`)**:
+  - Выбор формата экспорта: `ZIP-архив`, `Figma Tokens / Plugin format`, `Storybook bundle`, `npm package`.
+  - Выбор компонентов для включения в архив (чекбоксы/чипы).
+  - Настройка опций (TypeScript, Tailwind, автотесты, KDoc/JSDoc документация).
+  - Генерация и скачивание готового ZIP-архива.
+- **Система уведомлений (Toasts)**:
+  - Всплывающие уведомления об операциях копирования, завершении генерации, скачивании файлов и ошибках.
+
+---
+
+## 3. Текущее состояние реализации и технический статус
+
+| Компонент / Подсистема         |    Статус     | Текущее состояние и особенности реализации                                                                                                                      |
+| ------------------------------ | :-----------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Next.js 16 Web Core**        |     [OK]      | App Router настроен, поддержка React 19, Suspense границы на динамических страницах.                                                                            |
+| **Prisma + PostgreSQL**        |     [OK]      | Модели `Job` и `Reference`. Оптимизирован пул соединений (`limit=20`, `timeout=60s`), добавлен `withDbRetry` с экспоненциальной задержкой.                      |
+| **Worker Threads**             |     [OK]      | Запуск Playwright в изолированном потоке (`extract-worker.ts`), предотвращающий блокировку event-loop основного сервера.                                        |
+| **SSE (Server-Sent Events)**   |     [OK]      | Потоковая трансляция событий обновления задач (`/api/events`) через `EventEmitter`.                                                                             |
+| **Recent Projects (API & UI)** |     [OK]      | Эндпоинт `/api/projects` отдаёт все недавние задачи с реальным статусом (`completed`, `processing`, `failed`, `pending`), прогрессом и метаданными.             |
+| **Хранилище логов (Logger)**   |     [OK]      | Персистентное хранилище на `globalThis.__unweaveLogStore`, проброс логов из воркеров через `parentPort.postMessage`, API `/api/logs` и UI с фильтрами.          |
+| **Workspace Studio**           |     [OK]      | Режимы Split/Preview/Code, интерактивная сцена с переключателями вариантов и состояний, таблица Props, чеклист WCAG AA, автовыбор последнего проекта.           |
+| **Extract Wizard**             |     [OK]      | 4-шаговый мастер: выбор Viewport (Desktop/Tablet/Mobile), форматов (React/Vue/HTML) и флагов, интерактивный выбор DOM-элементов (Шаг 3), запуск и отслеживание. |
+| **Tokens View**                |     [OK]      | Интерактивная палитра цветов с копированием, шкалы отступов/типографики, экспорт в CSS Variables, Tailwind Config и W3C JSON Tokens.                            |
+| **Библиотека референсов**      | [IN_PROGRESS] | Страница `/references` с каталогом эталонов; запланирована полная синхронизация с базой данных Prisma (Этап 3).                                                 |
+| **Export Modal & ZIP**         |    [TODO]     | Генератор ZIP-архивов с компонентами, токенами и конфигурацией (Этап 3).                                                                                        |
+| **Command Palette (`⌘K`)**     |     [OK]      | Базовая реализация `CommandPalette.tsx` подключена в глобальном Layout; запланирована индексация компонентов проекта (Этап 3).                                  |
+
+---
+
+## 4. Разбор выявленных архитектурных проблем и внедрённые решения
+
+### 4.1. Исчерпание пула соединений БД (Prisma P2024 Connection Pool Timeout)
+
+- **Проблема**: При параллельных запросах опроса статуса (`GET /api/status/[id]`), инициализации SSE и работе воркеров возникала ошибка `Timed out fetching a new connection from the connection pool` (лимит 5 соединений, таймаут 30с).
+- **Решение**:
+  - В `packages/web/lib/db.ts` увеличен `connection_limit` до 20 и `pool_timeout` до 60 секунд.
+  - В `packages/web/lib/jobStore.ts` внедрена обёртка `withDbRetry` с повторными попытками при временных сетевых или пуловых задержках.
+
+### 4.2. Изоляция и потеря логов сервера и воркеров
+
+- **Проблема**: В dev-режиме Next.js изолирует модули роутов; массив `logStore = []` в `logger.ts` очищался при пересборках, а логи из `extract-worker.ts` попадали только в `process.stdout` терминала, минуя API `/api/logs`.
+- **Решение**:
+  - Сохранение логов в глобальный контекст (`globalThis.__unweaveLogStore`).
+  - Проброс сообщений из воркера через `parentPort.postMessage({ type: 'log', ... })` в централизованный логгер.
+
+### 4.3. Ошибочная очистка активных задач (`cleanupStaleJobs`)
+
+- **Проблема**: При каждом новом подключении клиента к SSE вызывалась функция `cleanupStaleJobs()`, которая помечала все задачи со статусом `pending` и `processing` как `failed` («Server restarted»).
+- **Решение**:
+  - Проверка времени последнего обновления задачи (`updatedAt < Date.now() - 5 * 60 * 1000`): считать задачу зависшей только при отсутствии активности более 5 минут.
+
+### 4.4. История проектов и глубокие ссылки (Deep Linking) в Workspace
+
+- **Проблема**: Главная страница показывала только задачи со статусом `completed`, скрывая упавшие или выполняющиеся процессы. Страница `/workspace` без параметров URL отображала пустой экран.
+- **Решение**:
+  - `/api/projects` возвращает последние N задач любого статуса с информацией о прогрессе и ошибках.
+  - В `/workspace` при отсутствии параметра `?jobId=` происходит автоматическая подгрузка последнего активного или завершённого проекта из базы данных / Zustand стора.
+
+---
+
+## 5. Дорожная карта реализации (План действий по приоритетам)
+
+### Этап 1: Стабилизация данных, логов и состояния задач (P0 — Выполнено [x])
+
+1. `[x]` **Персистентность логов и воркеров**:
+   - `[x]` Реализовать отправку логов из `extract-worker.ts` в основной поток через `parentPort.postMessage`.
+   - `[x]` Обеспечить единое централизованное хранение системных логов (`globalThis.__unweaveLogStore`), отдачу через `/api/logs` и фильтрацию в UI.
+2. `[x]` **Корректный жизненный цикл задач (Job Lifecycle)**:
+   - `[x]` Обновить `cleanupStaleJobs()` с проверкой таймаута неактивности (5 минут).
+   - `[x]` Расширить `/api/projects` для отдачи всех статусов (`completed`, `processing`, `failed`, `pending`) с сортировкой по `createdAt desc`.
+3. `[x]` **Глубокая адресация и состояние Workspace**:
+   - `[x]` Реализовать автовыбор последнего доступного проекта на странице `/workspace`, если параметр `jobId` не задан.
+
+### Этап 2: Доработка пользовательского интерфейса по референсу (P1 — Выполнено [x])
+
+1. `[x]` **Workspace Studio — Инспектор компонентов**:
+   - `[x]` Добавить панель переключения вариантов (`Primary`, `Secondary`, `Ghost`, `Outline`, `Destructive`) и состояний (`Default`, `Hover`, `Focus`, `Disabled`, `Loading`).
+   - `[x]` Реализовать генерацию таблицы Props (имя, тип, значение по умолчанию, обязательность) на основе спецификации компонента.
+   - `[x]` Добавить чеклист доступности (A11y): контрастность WCAG AA, `:focus-visible`, клавиатурная навигация, ARIA.
+   - `[x]` Реализовать скачивание отдельного файла компонента и копирование кода с Toast-уведомлением.
+   - `[x]` Добавить иконки категорий компонентов и бейджи вариантов в дереве компонентов.
+2. `[x]` **Extract Wizard — Завершение 4-шагового флоу**:
+   - `[x]` Настроить выбор Viewport (`Desktop`, `Tablet`, `Mobile`) с передачей параметров в хранилище и воркер.
+   - `[x]` Настроить выбор целевых фреймворков (`React`, `Vue`, `HTML`) и флагов (`TypeScript`, `Tailwind`, `Storybook`, `Vitest`).
+   - `[x]` Интегрировать интерактивный шаг выбора DOM-элементов (Шаг 3).
+   - `[x]` Добавить быстрый Hero Extract Input на главной странице с опциональными чипами.
+3. `[x]` **Дизайн-токены (Tokens View)**:
+   - `[x]` Интерактивное копирование токенов цвета, отступов и шрифтов в один клик.
+   - `[x]` Экспорт токенов в форматы CSS Variables (`:root`), Tailwind Config, JSON Tokens (W3C Design Tokens Community Group).
+
+### Этап 3: Экспорт, библиотека референсов и интеграция (P2 — В очереди [ ])
+
+1. `[ ]` **Модальное окно экспорта (Export Modal `⌘E`)**:
+   - Создать клиентский/серверный упаковщик ZIP-архива (с помощью `jszip` / `archiver`), содержащий сгенерированные файлы компонентов, токены и конфигурацию Tailwind.
+2. `[ ]` **Библиотека референсов (References)**:
+   - Синхронизация локальных файлов из `references/` с базой данных Prisma (`Reference` модель).
+   - Кнопка «Использовать референс» для генерации нового UI в заданной стилистике.
+3. `[ ]` **Улучшение Command Palette (`⌘K`)**:
+   - Индексация всех компонентов текущего проекта и быстрое переключение между ними через клавиатуру.
+
+### Этап 4: Тестирование и верификация (P3 — В очереди [ ])
+
+1. `[ ]` **Автоматизированные тесты**:
+   - Unit-тесты для утилит генерации кода и API роутов (`vitest`).
+   - E2E-тесты полного цикла извлечения и отображения в Workspace (`playwright`).
+2. `[ ]` **Проверка производительности и стабильности**:
+   - Нагрузочное тестирование опроса статусов при одновременной работе нескольких воркеров.

@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createJob, updateJob } from "@/lib/jobStore";
-import { logger } from "@/lib/logger";
+import { logger, addLogEntry } from "@/lib/logger";
 import { randomUUID } from "crypto";
 import { Worker } from "worker_threads";
 
@@ -35,9 +35,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Слушаем сообщения от воркера и обновляем БД
     worker.on("message", async (msg: any) => {
-      logger.debug("API:Extract", `Worker message for job ${jobId}`, msg);
       try {
-        if (msg.type === "progress") {
+        if (msg.type === "log" && msg.entry) {
+          addLogEntry(msg.entry);
+        } else if (msg.type === "progress") {
           await updateJob(jobId, {
             status: "processing",
             progress: msg.progress,

@@ -12,10 +12,22 @@ export const prisma =
     ],
     datasources: {
       db: {
-        url:
-          process.env.DATABASE_URL +
-          (process.env.DATABASE_URL?.includes("?") ? "&" : "?") +
-          "connection_limit=1&pool_timeout=20",
+        url: (() => {
+          const baseUrl = process.env.DATABASE_URL || "";
+          const hasParams = baseUrl.includes("?");
+          const hasConnectionLimit = baseUrl.includes("connection_limit=");
+          const hasPoolTimeout = baseUrl.includes("pool_timeout=");
+
+          if (hasConnectionLimit && hasPoolTimeout) {
+            return baseUrl;
+          }
+
+          const params: string[] = [];
+          if (!hasConnectionLimit) params.push("connection_limit=20");
+          if (!hasPoolTimeout) params.push("pool_timeout=60");
+
+          return baseUrl + (hasParams ? "&" : "?") + params.join("&");
+        })(),
       },
     },
   });

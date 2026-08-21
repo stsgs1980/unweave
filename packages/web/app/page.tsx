@@ -14,13 +14,14 @@ import RecentProjects, { Project } from "@/components/dashboard/RecentProjects";
 import ExtractWizard from "@/components/wizard/ExtractWizard";
 import LivePipelineWidget from "@/components/dashboard/LivePipelineWidget";
 import { useUIStore } from "@/store/ui-store";
+import { useWizardStore } from "@/store/wizard-store";
 
 /**
  * Dashboard component representing the main landing page.
  * @returns The rendered dashboard page.
  */
 export default function Dashboard() {
-  const isWizardOpen = useUIStore((state) => state.isWizardOpen);
+  const isWizardOpen = useWizardStore((state) => state.isOpen);
 
   // Используем TanStack Query для получения проектов
   const {

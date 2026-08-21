@@ -18,6 +18,7 @@ export default function Navbar() {
     { href: "/references", label: "References" },
     { href: jobId ? `/tokens?jobId=${jobId}` : "/tokens", label: "Tokens" },
     { href: jobId ? `/workspace?jobId=${jobId}` : "/workspace", label: "Workspace" },
+    { href: "/logs", label: "Logs" },
   ];
 
   const navClass = "flex items-center gap-6 px-8 py-4 border-b border-border bg-card";
