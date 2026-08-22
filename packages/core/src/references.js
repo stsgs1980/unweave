@@ -20,7 +20,7 @@ export async function saveReference(name, data) {
 /**
  * Load reference from catalog
  * @param {string} name - Reference name
- * @returns {Promise<Object|null>} Reference data or null
+ * @returns {Promise<{url?: string, timestamp?: string, [key: string]: any} | null>} Reference data or null
  */
 export async function loadReference(name) {
   const filePath = path.join(process.cwd(), "references", `${name}.json`);
