@@ -21,18 +21,18 @@ export async function GET(request: NextRequest): Promise<Response> {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
-      // Оборачиваем в async функцию, чтобы дождаться ответа от БД (Prisma)
+      // Wrap in async to await DB response (Prisma)
       (async () => {
         try {
-          // 0. Очищаем зависшие задачи при запуске сервера
+          // 0. Clean up stale jobs on server start
           await cleanupStaleJobs();
 
-          // 1. Отправляем текущие активные задачи при подключении
+          // 1. Send current active jobs on connect
           const jobs = await getActiveJobs();
           logger.info("API:Events", `Sending initial active jobs (${jobs.length}) to client`);
           sendEvent({ type: "initial", jobs });
 
-          // 2. Подписываемся на будущие обновления
+          // 2. Subscribe to future updates
           const unsubscribe = subscribe((job: Job) => {
             logger.debug(
               "API:Events",
@@ -41,12 +41,12 @@ export async function GET(request: NextRequest): Promise<Response> {
             sendEvent({ type: "update", job });
           });
 
-          // 3. Отправляем heartbeat каждые 15 сек, чтобы соединение не закрывалось
+          // 3. Send heartbeat every 15s to keep connection alive
           const interval = setInterval(() => {
             controller.enqueue(encoder.encode(`: ping\n\n`));
           }, 15000);
 
-          // 4. Отписываемся при закрытии вкладки
+          // 4. Unsubscribe on client disconnect
           request.signal.addEventListener("abort", () => {
             logger.info("API:Events", "SSE connection aborted/closed by client");
             clearInterval(interval);

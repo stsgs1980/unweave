@@ -41,51 +41,49 @@ export default function Step4Summary() {
         <div className="flex items-center gap-2 border-b border-border pb-2.5">
           <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-            Конфигурация задачи
+            Job Configuration
           </h3>
         </div>
 
         <div className="grid grid-cols-1 gap-2.5 text-xs sm:grid-cols-2">
           <div>
-            <span className="text-muted-foreground">Источник (URL):</span>
+            <span className="text-muted-foreground">Source (URL):</span>
             <p className="truncate font-semibold text-foreground">{url}</p>
           </div>
 
           <div>
-            <span className="text-muted-foreground">Разрешение экрана:</span>
+            <span className="text-muted-foreground">Resolution:</span>
             <p className="font-semibold capitalize text-foreground">{viewport}</p>
           </div>
 
           <div>
-            <span className="text-muted-foreground">Выбрано компонентов:</span>
-            <p className="font-semibold text-foreground">
-              {selectedElements.length} вручную + авто
-            </p>
+            <span className="text-muted-foreground">Components Selected:</span>
+            <p className="font-semibold text-foreground">{selectedElements.length} manual + auto</p>
           </div>
 
           <div>
-            <span className="text-muted-foreground">Формат кода:</span>
+            <span className="text-muted-foreground">Code Format:</span>
             <p className="font-semibold uppercase text-primary">{format}</p>
           </div>
 
           <div>
-            <span className="text-muted-foreground">Скриншоты:</span>
+            <span className="text-muted-foreground">Screenshots:</span>
             <p className="text-foreground">
-              {activeScreenshots.length > 0 ? activeScreenshots.join(", ") : "Выключены"}
+              {activeScreenshots.length > 0 ? activeScreenshots.join(", ") : "Disabled"}
             </p>
           </div>
 
           <div>
-            <span className="text-muted-foreground">Опции генерации:</span>
+            <span className="text-muted-foreground">Generation Options:</span>
             <p className="text-foreground">
-              {activeExtras.length > 0 ? activeExtras.join(", ") : "Стандартные"}
+              {activeExtras.length > 0 ? activeExtras.join(", ") : "Standard"}
             </p>
           </div>
         </div>
 
         {componentFocus && (
           <div className="border-t border-border pt-2 text-xs">
-            <span className="text-muted-foreground">Фокус на типах:</span>
+            <span className="text-muted-foreground">Focus Types:</span>
             <p className="font-mono text-muted-foreground/90">{componentFocus}</p>
           </div>
         )}
@@ -97,7 +95,7 @@ export default function Step4Summary() {
           onClick={handleBack}
           className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          ← Назад
+          ← Back
         </button>
         <button
           type="button"
@@ -105,7 +103,7 @@ export default function Step4Summary() {
           className="flex items-center gap-1.5 rounded-lg bg-primary px-6 py-2 text-xs font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <Zap className="h-4 w-4" />
-          Запустить извлечение
+          Launch Extraction
         </button>
       </div>
     </div>

@@ -4,24 +4,48 @@
   "description": "Core library for UI extraction",
   "type": "module",
   "main": "./src/index.js",
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.js",
-    "./extract": "./src/extract.js",
-    "./analyze": "./src/analyze.js",
-    "./spec": "./src/spec.js",
-    "./generate": "./src/generate.js",
-    "./pipeline": "./src/pipeline.js",
-    "./diff": "./src/diff.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./extract": {
+      "types": "./dist/extract.d.ts",
+      "default": "./src/extract.js"
+    },
+    "./analyze": {
+      "types": "./dist/analyze.d.ts",
+      "default": "./src/analyze.js"
+    },
+    "./spec": {
+      "types": "./dist/spec.d.ts",
+      "default": "./src/spec.js"
+    },
+    "./generate": {
+      "types": "./dist/generate.d.ts",
+      "default": "./src/generate.js"
+    },
+    "./pipeline": {
+      "types": "./dist/pipeline.d.ts",
+      "default": "./src/pipeline.js"
+    },
+    "./diff": {
+      "types": "./dist/diff.d.ts",
+      "default": "./src/diff.js"
+    }
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "tsc --declaration --emitDeclarationOnly --allowJs --outDir dist --module ESNext --target ES2022 --moduleResolution node --declarationMap --skipLibCheck --rootDir src src/index.js",
+    "typecheck": "tsc --noEmit --allowJs --checkJs --module ESNext --target ES2022 --moduleResolution node --skipLibCheck --rootDir src src/index.js"
   },
   "dependencies": {
     "playwright": "^1.62.0"
   },
   "devDependencies": {
+    "typescript": "^5.9.0",
     "vitest": "^2.0.0"
   }
 }

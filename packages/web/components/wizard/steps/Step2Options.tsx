@@ -30,7 +30,7 @@ export default function Step2Options() {
       {/* Target Framework */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Целевой фреймворк / Формат
+          Target Framework / Format
         </label>
         <div className="grid grid-cols-3 gap-2.5">
           {formats.map((fmt) => {
@@ -62,14 +62,14 @@ export default function Step2Options() {
       {/* Screenshot Modes */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Режимы скриншотов
+          Screenshot Modes
         </label>
         <div className="flex flex-wrap gap-2">
           {[
             { key: "fullPage", label: "Full page" },
             { key: "viewport", label: "Viewport" },
             { key: "mobile", label: "Mobile" },
-            { key: "sections", label: "Секции" },
+            { key: "sections", label: "Sections" },
           ].map(({ key, label }) => {
             const isChecked = (screenshots as any)[key];
             return (
@@ -94,14 +94,14 @@ export default function Step2Options() {
       {/* Extra generation options */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Дополнительные генерации
+          Extra Generations
         </label>
         <div className="flex flex-wrap gap-2">
           {[
             { key: "typescript", label: "TypeScript" },
             { key: "tailwind", label: "Tailwind CSS" },
             { key: "storybook", label: "Storybook stories" },
-            { key: "tests", label: "Автотесты (Vitest)" },
+            { key: "tests", label: "Auto-tests (Vitest)" },
           ].map(({ key, label }) => {
             const isChecked = (extraOptions as any)[key];
             return (
@@ -129,14 +129,14 @@ export default function Step2Options() {
           onClick={handleBack}
           className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          ← Назад
+          ← Back
         </button>
         <button
           type="button"
           onClick={handleNext}
           className="rounded-lg bg-primary px-5 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
-          Далее: Выбор элементов →
+          Next: Element Selection →
         </button>
       </div>
     </div>

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
     logger.info("API:Extract", `Worker spawned for job ID ${jobId}`);
 
-    // Слушаем сообщения от воркера и обновляем БД
+    // Listen to worker messages and update DB
     worker.on("message", async (msg: any) => {
       try {
         if (msg.type === "log" && msg.entry) {

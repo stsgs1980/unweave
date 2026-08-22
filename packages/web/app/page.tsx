@@ -23,7 +23,7 @@ import { useWizardStore } from "@/store/wizard-store";
 export default function Dashboard() {
   const isWizardOpen = useWizardStore((state) => state.isOpen);
 
-  // Используем TanStack Query для получения проектов
+  // Use TanStack Query to fetch projects
   const {
     data: projects,
     isLoading,
@@ -40,7 +40,7 @@ export default function Dashboard() {
     },
   });
 
-  // Обработка ошибки через эффект (в TanStack Query v5 onError удалён из useQuery)
+  // Error handling via effect (TanStack Query v5 removed onError from useQuery)
   useEffect(() => {
     if (isError && error) {
       toast.error(error.message);
@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   const projectsData = projects ?? [];
 
-  // Получаем количество выполненных задач для статистики
+  // Get completed jobs count for stats
   const { data: stats } = useQuery<{ completedCount: number }>({
     queryKey: ["stats"],
     queryFn: async () => {

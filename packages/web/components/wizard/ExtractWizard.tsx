@@ -16,10 +16,10 @@ import StepProgress from "./steps/StepProgress";
 import StepResult from "./steps/StepResult";
 
 const wizardSteps = [
-  { id: 1, title: "Источник", icon: Globe },
-  { id: 2, title: "Опции", icon: Sliders },
-  { id: 3, title: "Превью", icon: Eye },
-  { id: 4, title: "Сводка", icon: Zap },
+  { id: 1, title: "Source", icon: Globe },
+  { id: 2, title: "Options", icon: Sliders },
+  { id: 3, title: "Preview", icon: Eye },
+  { id: 4, title: "Summary", icon: Zap },
 ];
 
 /**
@@ -67,11 +67,9 @@ export default function ExtractWizard(): React.JSX.Element | null {
         <div className="border-b border-border bg-muted/20 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-foreground">
-                Мастер извлечения (Extract Wizard)
-              </h2>
+              <h2 className="text-base font-bold text-foreground">Extract Wizard</h2>
               <p className="text-xs text-muted-foreground">
-                Анализ веб-страницы, токенов и генерация React/Vue компонентов
+                Analyze webpage, extract tokens, and generate React/Vue components
               </p>
             </div>
             <button

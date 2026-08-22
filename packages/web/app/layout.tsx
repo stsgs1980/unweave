@@ -4,7 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import CommandPalette from "@/components/CommandPalette";
 import Navbar from "@/components/Navbar";
-import { Providers } from "@/components/providers"; // <-- Добавлен импорт
+import { Providers } from "@/components/providers"; // <-- Added import
 import "./globals.css";
 
 const inter = Inter({
@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Корневой layout для всего приложения.
- * @param props - свойства компонента
- * @param props.children - дочерние элементы
- * @returns корневая разметка HTML
+ * Root layout for the entire application.
+ * @param props - component props
+ * @param props.children - child elements
+ * @returns root HTML markup
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

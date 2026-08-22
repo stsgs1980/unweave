@@ -96,10 +96,13 @@ export async function pipeline(urls, options = {}, onProgress) {
       });
     } catch (error) {
       console.error(`[pipeline] Failed: ${url}`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       results.push({
         url,
         success: false,
-        error: error.message,
+        error: errorMessage,
+        stack: errorStack,
       });
     }
   }

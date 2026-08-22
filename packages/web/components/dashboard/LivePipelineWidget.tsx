@@ -5,6 +5,8 @@
  */
 
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { XCircle } from "lucide-react";
 import type { Job } from "@/lib/jobStore";
 
 /**
@@ -13,9 +15,27 @@ import type { Job } from "@/lib/jobStore";
  */
 export default function LivePipelineWidget() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
+
+  const handleStop = async (jobId: string) => {
+    setCancellingIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch(`/api/status/${jobId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to stop");
+      toast.info("Extraction stopped");
+    } catch {
+      toast.error("Failed to stop extraction");
+    } finally {
+      setCancellingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
-    // Подписываемся на SSE эндпоинт
+    // Subscribe to SSE endpoint
     const eventSource = new EventSource("/api/events");
 
     eventSource.onmessage = (event) => {
@@ -27,10 +47,10 @@ export default function LivePipelineWidget() {
         setJobs((prevJobs) => {
           const exists = prevJobs.find((j) => j.id === data.job.id);
           if (exists) {
-            // Обновляем существующую
+            // Update existing
             return prevJobs.map((j) => (j.id === data.job.id ? data.job : j));
           }
-          // Добавляем новую, если она активна
+          // Add new if active
           if (data.job.status === "pending" || data.job.status === "processing") {
             return [...prevJobs, data.job];
           }
@@ -44,11 +64,11 @@ export default function LivePipelineWidget() {
     };
   }, []);
 
-  // Фильтруем только активные задачи для отображения
+  // Filter only active jobs for display
   const activeJobs = jobs.filter((j) => j.status === "pending" || j.status === "processing");
 
   if (activeJobs.length === 0) {
-    return null; // Не показываем виджет, если нет активных задач
+    return null; // Don't show widget if no active jobs
   }
 
   const widgetClass = "rounded-lg border border-border bg-card p-4 text-card-foreground space-y-4";
@@ -69,7 +89,18 @@ export default function LivePipelineWidget() {
                 style={{ width: `${job.progress}%` }}
               ></div>
             </div>
-            <p className="text-xs text-muted-foreground">{job.message || "Initializing..."}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">{job.message || "Initializing..."}</p>
+              <button
+                type="button"
+                onClick={() => handleStop(job.id)}
+                disabled={cancellingIds.has(job.id)}
+                className="inline-flex items-center gap-1 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <XCircle className="h-3 w-3" />
+                {cancellingIds.has(job.id) ? "Stopping..." : "Stop"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

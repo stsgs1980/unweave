@@ -28,7 +28,7 @@ export function ColorPalette({ colors, copiedToken, onCopy }: ColorPaletteProps)
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Palette className="h-4 w-4 text-primary" />
-          Цветовая палитра ({colors.length})
+          Color Palette ({colors.length})
         </h3>
         <span className="rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
           HEX / RGB / CSS

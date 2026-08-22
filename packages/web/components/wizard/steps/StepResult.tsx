@@ -24,9 +24,9 @@ export default function StepResult() {
       </div>
 
       <div>
-        <h3 className="text-base font-bold text-foreground">Извлечение завершено!</h3>
+        <h3 className="text-base font-bold text-foreground">Extraction Complete!</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Компоненты и дизайн-токены сохранены в базе и готовы к инспекции.
+          Components and design tokens saved to database and ready for inspection.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default function StepResult() {
           className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <Layers className="h-4 w-4" />
-          Открыть Workspace
+          Open Workspace
         </Link>
         <Link
           href={`/tokens?jobId=${jobId}`}
@@ -45,7 +45,7 @@ export default function StepResult() {
           className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
         >
           <Palette className="h-4 w-4 text-primary" />
-          Смотреть токены
+          View Tokens
         </Link>
       </div>
 
@@ -55,7 +55,7 @@ export default function StepResult() {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
         >
           <RefreshCw className="h-3 w-3" />
-          Запустить новое извлечение
+          Start New Extraction
         </button>
       </div>
     </div>

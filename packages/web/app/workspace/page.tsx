@@ -8,11 +8,20 @@ import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Layers, ArrowLeft, RefreshCw } from "lucide-react";
+import { ExternalLink, Layers, ArrowLeft, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import { useWizardStore } from "@/store/wizard-store";
 import { Button } from "@/components/ui/button";
 import ComponentTree from "./ComponentTree";
 import CodePreview from "./CodePreview";
+
+interface JobStatus {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  progress: number;
+  message?: string;
+  error?: string;
+  url?: string;
+}
 
 /**
  * Inner component that uses useSearchParams (requires Suspense boundary).
@@ -23,6 +32,8 @@ function WorkspaceContent() {
   const urlJobId = searchParams.get("jobId");
   const wizardJobId = useWizardStore((state) => state.jobId);
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   // Fetch recent projects if no jobId in URL or store
   const { data: recentProjects = [] } = useQuery<any[]>({
@@ -43,13 +54,50 @@ function WorkspaceContent() {
     recentProjects[0]?.id ||
     null;
 
-  // Fetch extraction results using TanStack Query
+  // First, fetch job status
+  const {
+    data: statusData,
+    isLoading: isStatusLoading,
+    isError: isStatusError,
+    refetch: refetchStatus,
+  } = useQuery<JobStatus>({
+    queryKey: ["workspace", "status", effectiveJobId],
+    queryFn: async (): Promise<JobStatus> => {
+      if (!effectiveJobId) throw new Error("No job ID");
+      const response = await fetch(`/api/status/${effectiveJobId}`);
+      if (!response.ok) {
+        throw new Error("Failed to load job status");
+      }
+      return response.json();
+    },
+    enabled: !!effectiveJobId,
+    refetchInterval: (query) => {
+      const data = query.state.data as JobStatus | undefined;
+      return data?.status === "processing" || data?.status === "pending" ? 2000 : false;
+    },
+    retry: 3,
+  });
+
+  // Update local job status when statusData changes
+  useEffect(() => {
+    if (statusData) {
+      setJobStatus(statusData);
+      // If completed, trigger results fetch
+      if (statusData.status === "completed") {
+        setShowResults(true);
+      } else {
+        setShowResults(false);
+      }
+    }
+  }, [statusData]);
+
+  // Fetch extraction results only when job is completed
   const {
     data: resultsData,
-    isLoading,
-    isError,
-    error,
-    refetch,
+    isLoading: isResultsLoading,
+    isError: isResultsError,
+    error: resultsError,
+    refetch: refetchResults,
   } = useQuery({
     queryKey: ["workspace", "results", effectiveJobId],
     queryFn: async (): Promise<any> => {
@@ -60,11 +108,12 @@ function WorkspaceContent() {
       }
       return response.json();
     },
-    enabled: !!effectiveJobId,
+    enabled: showResults && !!effectiveJobId,
+    retry: 1,
   });
 
   const components: any[] = resultsData?.analysis?.components || [];
-  const projectUrl: string = resultsData?.url || resultsData?.analysis?.url || "";
+  const projectUrl: string = resultsData?.url || resultsData?.analysis?.url || jobStatus?.url || "";
 
   // Auto-select first component when components load
   useEffect(() => {
@@ -75,7 +124,7 @@ function WorkspaceContent() {
     }
   }, [components, selectedComponent]);
 
-  if (!effectiveJobId && !isLoading) {
+  if (!effectiveJobId && !isStatusLoading) {
     return (
       <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
         <div className="rounded-full bg-muted p-4 mb-4">
@@ -98,6 +147,170 @@ function WorkspaceContent() {
     );
   }
 
+  if (isStatusLoading) {
+    return (
+      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground">Loading job status...</p>
+      </main>
+    );
+  }
+
+  if (isStatusError) {
+    return (
+      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
+        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
+        <h1 className="text-xl font-bold text-foreground">Failed to Load Job Status</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
+          Could not retrieve the extraction job status. Please try again.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Button onClick={() => refetchStatus()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+          <Link href="/">
+            <Button variant="outline">Go to Dashboard</Button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Handle job status states
+  if (jobStatus) {
+    // Processing / Pending - show progress
+    if (jobStatus.status === "pending" || jobStatus.status === "processing") {
+      return (
+        <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
+          <div className="w-full max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <h1 className="text-lg font-semibold text-foreground">
+                {jobStatus.status === "pending"
+                  ? "Starting Extraction..."
+                  : "Extracting Components"}
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4 text-center">
+              {jobStatus.message || `Progress: ${jobStatus.progress}%`}
+            </p>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500 ease-out"
+                style={{ width: `${jobStatus.progress}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground text-center font-mono">
+              {jobStatus.progress}%
+            </p>
+            {jobStatus.url && (
+              <p className="mt-4 text-xs text-muted-foreground text-center truncate">
+                Source: {jobStatus.url}
+              </p>
+            )}
+          </div>
+        </main>
+      );
+    }
+
+    // Failed - show error with retry
+    if (jobStatus.status === "failed") {
+      return (
+        <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+          <h1 className="text-xl font-bold text-foreground">Extraction Failed</h1>
+          <p className="mt-2 text-sm text-muted-foreground max-w-md">
+            {jobStatus.error || jobStatus.message || "An unknown error occurred during extraction."}
+          </p>
+          {jobStatus.url && (
+            <p className="mt-2 text-xs text-muted-foreground truncate max-w-md">
+              Source: {jobStatus.url}
+            </p>
+          )}
+          <div className="mt-6 flex gap-3">
+            <Button
+              onClick={() => {
+                setShowResults(false);
+                refetchStatus();
+              }}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+            <Link href="/">
+              <Button variant="outline">New Extraction</Button>
+            </Link>
+          </div>
+        </main>
+      );
+    }
+
+    // Completed - show results (handled below)
+  }
+
+  // If completed but results not loaded yet
+  if (showResults && isResultsLoading) {
+    return (
+      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground">Loading extraction results...</p>
+      </main>
+    );
+  }
+
+  // If completed but results error
+  if (showResults && isResultsError) {
+    return (
+      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
+        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
+        <h1 className="text-xl font-bold text-foreground">Failed to Load Results</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
+          {resultsError?.message || "Could not load extraction results."}
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Button onClick={() => refetchResults()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+          <Link href="/">
+            <Button variant="outline">Go to Dashboard</Button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Completed with results - check for components
+  if (showResults && components.length === 0) {
+    return (
+      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
+        <Layers className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h1 className="text-xl font-bold text-foreground">No Components Found</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
+          The extraction completed but no UI components were detected. This can happen if the page
+          is empty, uses heavy JavaScript rendering, or has restrictive CSP.
+        </p>
+        {projectUrl && (
+          <p className="mt-2 text-xs text-muted-foreground truncate max-w-md">
+            Source: {projectUrl}
+          </p>
+        )}
+        <div className="mt-6 flex gap-3">
+          <Button onClick={() => refetchStatus()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Re-extract
+          </Button>
+          <Link href="/">
+            <Button variant="outline">New Extraction</Button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Completed with components - show workspace
   return (
     <main className="flex h-[calc(100vh-65px)] flex-col">
       <header className="flex items-center justify-between border-b border-border px-6 py-3 bg-card/50">
@@ -129,7 +342,10 @@ function WorkspaceContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => {
+              refetchStatus();
+              refetchResults();
+            }}
             className="h-8 gap-1.5 text-xs text-muted-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -146,20 +362,16 @@ function WorkspaceContent() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel: Component Tree */}
         <aside className="w-80 border-r border-border overflow-y-auto p-4 bg-card/20">
-          {isLoading ? (
-            <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">
-              Loading components...
-            </div>
-          ) : isError ? (
-            <div className="p-3 text-xs text-destructive bg-destructive/10 rounded-md border border-destructive/20">
-              Error: {error?.message}
-            </div>
-          ) : (
+          {components.length > 0 ? (
             <ComponentTree
               components={components}
               selectedComponent={selectedComponent}
               onSelect={setSelectedComponent}
             />
+          ) : (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              No components to display
+            </div>
           )}
         </aside>
 

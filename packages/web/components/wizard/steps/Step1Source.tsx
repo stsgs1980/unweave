@@ -28,7 +28,7 @@ export default function Step1Source() {
     <form onSubmit={handleNext} className="space-y-5">
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Целевой URL сайта
+          Target Website URL
         </label>
         <div className="relative">
           <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -46,7 +46,7 @@ export default function Step1Source() {
 
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Разрешение экрана (Viewport)
+          Screen Resolution (Viewport)
         </label>
         <div className="grid grid-cols-3 gap-2.5">
           {viewports.map((vp) => {
@@ -74,17 +74,17 @@ export default function Step1Source() {
 
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-foreground">
-          Фокус на компонентах (опционально)
+          Component Focus (optional)
         </label>
         <input
           type="text"
           value={componentFocus}
           onChange={(e) => setComponentFocus(e.target.value)}
-          placeholder="например: buttons, cards, navigation, hero"
+          placeholder="e.g.: buttons, cards, navigation, hero"
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Укажите через запятую типы элементов для приоритетной классификации.
+          Specify element types comma-separated for priority classification.
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export default function Step1Source() {
           type="submit"
           className="rounded-lg bg-primary px-5 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
-          Далее: Опции и формат →
+          Next: Options & Format →
         </button>
       </div>
     </form>

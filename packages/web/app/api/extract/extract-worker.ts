@@ -64,8 +64,9 @@ async function run(): Promise<void> {
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown worker error";
-    sendWorkerLog("error", "Extraction failed", { error: errorMessage });
-    parentPort.postMessage({ type: "failed", error: errorMessage });
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    sendWorkerLog("error", "Extraction failed", { error: errorMessage, stack: errorStack });
+    parentPort.postMessage({ type: "failed", error: errorMessage, stack: errorStack });
   }
 }
 

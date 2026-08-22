@@ -7,7 +7,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, RefreshCw, Trash2, Terminal } from "lucide-react";
+import { Search, RefreshCw, Trash2, Terminal, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogEntry, LogEntryRow } from "./components/LogEntryRow";
 
@@ -64,6 +64,31 @@ export default function LogsPage() {
     }
   };
 
+  const handleDownloadLogs = () => {
+    if (filteredLogs.length === 0) {
+      toast.info("No logs to download");
+      return;
+    }
+    const logLines = filteredLogs.map((log) => {
+      const timestamp = new Date(log.timestamp).toISOString();
+      const level = log.level.toUpperCase().padEnd(5);
+      const module = log.module.padEnd(20);
+      const data = log.data ? ` | ${JSON.stringify(log.data)}` : "";
+      return `[${timestamp}] ${level} ${module} | ${log.message}${data}`;
+    });
+    const content = logLines.join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `unweave-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Logs downloaded");
+  };
+
   return (
     <main className="flex h-[calc(100vh-65px)] flex-col p-8 overflow-y-auto">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
@@ -106,6 +131,15 @@ export default function LogsPage() {
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadLogs}
+            className="h-8 gap-1.5 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download
           </Button>
           <Button
             variant="outline"

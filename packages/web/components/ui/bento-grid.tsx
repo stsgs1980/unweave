@@ -5,41 +5,41 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 
 /**
- * Свойства компонента BentoGrid.
+ * BentoGrid component props.
  */
 export interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
-  /** Дочерние элементы сетки (обычно BentoCard). */
+  /** Grid children (usually BentoCard). */
   children: ReactNode;
-  /** Дополнительные CSS-классы. */
+  /** Additional CSS classes. */
   className?: string;
 }
 
 /**
- * Свойства компонента BentoCard.
+ * BentoCard component props.
  */
 export interface BentoCardProps extends ComponentPropsWithoutRef<"div"> {
-  /** Название карточки (заголовок). */
+  /** Card name (title). */
   name: string;
-  /** CSS-классы карточки. */
+  /** Card CSS classes. */
   className: string;
-  /** Фоновый контент (градиент, изображение, SVG). */
+  /** Background content (gradient, image, SVG). */
   background: ReactNode;
-  /** Компонент иконки (например, из lucide-react). */
+  /** Icon component (e.g., from lucide-react). */
   Icon: React.ElementType;
-  /** Краткое описание карточки. */
+  /** Brief card description. */
   description: string;
-  /** URL, на который ведёт CTA-ссылка. */
+  /** URL for CTA link. */
   href: string;
-  /** Текст CTA-кнопки/ссылки. */
+  /** CTA button/link text. */
   cta: string;
 }
 
 /**
- * Сетка в стиле bento-box для размещения карточек.
- * @param props - Свойства компонента.
- * @param props.children - Дочерние элементы (BentoCard).
- * @param props.className - Дополнительные CSS-классы.
- * @returns Отрендеренный контейнер сетки.
+ * Bento-box style grid for placing cards.
+ * @param props - Component props.
+ * @param props.children - Child elements (BentoCard).
+ * @param props.className - Additional CSS classes.
+ * @returns Rendered grid container.
  */
 export const BentoGrid = ({
   children,
@@ -54,16 +54,16 @@ export const BentoGrid = ({
 };
 
 /**
- * Отдельная карточка bento-сетки с hover-эффектами и CTA-ссылкой.
- * @param props - Свойства компонента.
- * @param props.name - Заголовок карточки.
- * @param props.className - CSS-классы карточки.
- * @param props.background - Фоновый контент (градиент/изображение).
- * @param props.Icon - Компонент иконки.
- * @param props.description - Описание карточки.
- * @param props.href - URL CTA-ссылки.
- * @param props.cta - Текст CTA-ссылки.
- * @returns Отрендеренная карточка.
+ * Individual bento-grid card with hover effects and CTA link.
+ * @param props - Component props.
+ * @param props.name - Card title.
+ * @param props.className - Card CSS classes.
+ * @param props.background - Background content (gradient/image).
+ * @param props.Icon - Icon component.
+ * @param props.description - Card description.
+ * @param props.href - CTA link URL.
+ * @param props.cta - CTA link text.
+ * @returns Rendered card.
  */
 export const BentoCard = ({
   name,

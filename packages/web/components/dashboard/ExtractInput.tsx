@@ -32,12 +32,10 @@ export default function ExtractInput() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-bold text-foreground">
-          Быстрое извлечение дизайн-системы и UI
-        </h2>
+        <h2 className="text-lg font-bold text-foreground">Quick Design System & UI Extraction</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Введите URL веб-сайта для автоматического анализа токенов, декомпозиции и генерации кода
-          компонентов.
+          Enter a website URL to automatically analyze tokens, decompose, and generate component
+          code.
         </p>
       </div>
 
@@ -59,13 +57,13 @@ export default function ExtractInput() {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 shrink-0"
         >
           <Zap className="h-4 w-4" />
-          Извлечь UI
+          Extract UI
         </button>
       </form>
 
       {/* Quick Option Chips */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground mr-1">Быстрые опции:</span>
+        <span className="text-[11px] font-medium text-muted-foreground mr-1">Quick options:</span>
         <button
           type="button"
           onClick={() => toggleChip("screenshots")}
@@ -76,7 +74,7 @@ export default function ExtractInput() {
           }`}
         >
           <Image className="h-3 w-3" />
-          Скриншоты
+          Screenshots
         </button>
 
         <button
@@ -89,7 +87,7 @@ export default function ExtractInput() {
           }`}
         >
           <Palette className="h-3 w-3" />
-          Дизайн-система
+          Design System
         </button>
 
         <button
@@ -102,7 +100,7 @@ export default function ExtractInput() {
           }`}
         >
           <Box className="h-3 w-3" />
-          Компоненты
+          Components
         </button>
 
         <button

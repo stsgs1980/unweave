@@ -21,6 +21,9 @@ out/
 .DS_Store
 Thumbs.db
 
+# Neon config (contains provider-specific settings)
+.neon
+
 # Logs
 *.log
 npm-debug.log*

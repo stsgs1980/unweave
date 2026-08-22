@@ -18,7 +18,7 @@ function createServer(): Server {
     { capabilities: { tools: {} } },
   );
 
-  // Регистрируем доступные инструменты
+  // Register available tools
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
       {
@@ -54,17 +54,17 @@ function createServer(): Server {
     ],
   }));
 
-  // Обрабатываем вызовы инструментов
+  // Handle tool calls
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "extract_ui") {
       const { url } = request.params.arguments as { url: string };
 
       try {
-        // Импортируем ядро
+        // Import core
         const { pipeline } = await import("@unweave/core/pipeline");
         console.error(`[MCP] Starting extraction for: ${url}`);
 
-        // Запускаем пайплайн
+        // Run pipeline
         const results = await pipeline(url);
         const result = results[0];
 

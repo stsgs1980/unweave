@@ -22,10 +22,13 @@ export const prisma =
             return baseUrl;
           }
 
+          // Only add connection pool params for PostgreSQL/Neon
+          const isPostgres = baseUrl.startsWith("postgresql://") || baseUrl.includes("neon.tech");
           const params: string[] = [];
-          if (!hasConnectionLimit) params.push("connection_limit=20");
-          if (!hasPoolTimeout) params.push("pool_timeout=60");
+          if (isPostgres && !hasConnectionLimit) params.push("connection_limit=20");
+          if (isPostgres && !hasPoolTimeout) params.push("pool_timeout=60");
 
+          if (params.length === 0) return baseUrl;
           return baseUrl + (hasParams ? "&" : "?") + params.join("&");
         })(),
       },

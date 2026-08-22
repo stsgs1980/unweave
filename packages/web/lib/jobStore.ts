@@ -19,7 +19,9 @@ export interface Job {
 const emitter = new EventEmitter();
 
 /**
- * Helper to retry database operations on transient connection pool timeouts.
+ * Helper to retry database operations on transient errors.
+ * Handles PostgreSQL (connection pool, timeouts) and SQLite (locked, busy).
+ * Skips non-retryable errors (unique constraint, record not found).
  * @param fn
  * @param retries
  * @param delay
@@ -28,16 +30,29 @@ export async function withDbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 
   try {
     return await fn();
   } catch (error: any) {
-    if (
+    const code = error?.code;
+    const message = error?.message?.toLowerCase() ?? "";
+
+    // Non-retryable errors - throw immediately
+    if (code === "P2002" || code === "P2025") {
+      throw error;
+    }
+
+    // Retryable patterns: PostgreSQL + SQLite
+    const isRetryable =
       retries > 0 &&
-      (error?.code === "P2024" ||
-        error?.message?.includes("connection pool") ||
-        error?.message?.includes("Timed out") ||
-        error?.message?.includes("connection"))
-    ) {
+      (code === "P2024" ||
+        message.includes("connection pool") ||
+        message.includes("timed out") ||
+        message.includes("connection") ||
+        message.includes("database is locked") ||
+        message.includes("sqlite_busy") ||
+        message.includes("disk i/o error"));
+
+    if (isRetryable) {
       logger.warn(
         "JobStore",
-        `Database connection timeout/pool error, retrying... (${retries} attempts left)`,
+        `Database transient error, retrying... (${retries} attempts left)`,
         error,
       );
       await new Promise((resolve) => setTimeout(resolve, delay));

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWizardStore } from "@/store/wizard-store";
-import { Loader2 } from "lucide-react";
+import { Loader2, XCircle } from "lucide-react";
 
 /**
  * StepProgress component for the extraction wizard.
@@ -21,10 +21,12 @@ export default function StepProgress() {
     selectedElements,
     setJobId,
     setStep,
+    reset: resetWizard,
   } = useWizardStore();
 
   const [progress, setProgress] = useState(10);
   const [message, setMessage] = useState("Initializing extraction worker...");
+  const [isCancelling, setIsCancelling] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const {
@@ -64,6 +66,25 @@ export default function StepProgress() {
     },
   });
 
+  const handleCancel = async () => {
+    if (!jobId) return;
+    setIsCancelling(true);
+    try {
+      // Abort the polling interval
+      abortControllerRef.current?.abort();
+      // Call the cancel API
+      await fetch(`/api/status/${jobId}`, { method: "DELETE" });
+      toast.info("Extraction cancelled");
+      // Reset wizard state
+      resetWizard();
+      setStep(1);
+    } catch {
+      toast.error("Failed to cancel extraction");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   useEffect(() => {
     reset();
   }, [url, reset]);
@@ -96,7 +117,9 @@ export default function StepProgress() {
           setStep("result");
         } else if (statusData.status === "failed") {
           clearInterval(interval);
-          toast.error(statusData.error || "Extraction failed");
+          if (statusData.error !== "Cancelled by user") {
+            toast.error(statusData.error || "Extraction failed");
+          }
           setStep(1);
         }
       } catch (e) {
@@ -137,6 +160,16 @@ export default function StepProgress() {
           <span>{progress}%</span>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleCancel}
+        disabled={isCancelling}
+        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <XCircle className="h-3.5 w-3.5" />
+        {isCancelling ? "Cancelling..." : "Cancel Extraction"}
+      </button>
     </div>
   );
 }

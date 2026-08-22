@@ -24,17 +24,137 @@ function normalizeViewport(viewport) {
 }
 
 /**
+ * Default limits for extraction
+ * @type {Object}
+ */
+const EXTRACTION_LIMITS = {
+  maxElements: 500,
+  evaluateTimeout: 30000,
+};
+
+/**
+ * Extract CSS variables from documentElement
+ * @param {Page} page - Playwright page
+ * @returns {Promise<Object<string, string>>}
+ */
+async function extractCSSVariables(page) {
+  return page.evaluate(
+    () => {
+      const variables = {};
+      const styles = window.getComputedStyle(document.documentElement);
+      for (const [key, value] of Object.entries(styles)) {
+        if (key.startsWith("--")) {
+          variables[key] = typeof value === "string" ? value.trim() : "";
+        }
+      }
+      return variables;
+    },
+    { timeout: EXTRACTION_LIMITS.evaluateTimeout },
+  );
+}
+
+/**
+ * Extract page meta information
+ * @param {Page} page - Playwright page
+ * @returns {Promise<Object>}
+ */
+async function extractPageMeta(page) {
+  return page.evaluate(
+    () => ({
+      url: window.location.href,
+      title: document.title,
+      meta: {
+        viewport: document.querySelector('meta[name="viewport"]')?.content,
+        charset: document.characterSet,
+        description: document.querySelector('meta[name="description"]')?.content,
+      },
+    }),
+    { timeout: EXTRACTION_LIMITS.evaluateTimeout },
+  );
+}
+
+/**
+ * Extract elements with limited computed styles (batched for performance)
+ * @param {Page} page - Playwright page
+ * @param {number} maxElements - Maximum number of elements to extract
+ * @returns {Promise<Array>}
+ */
+async function extractElements(page, maxElements = EXTRACTION_LIMITS.maxElements) {
+  return page.evaluate(
+    (limit) => {
+      const getComputedStyles = (element) => {
+        const styles = window.getComputedStyle(element);
+        const result = {};
+        for (let i = 0; i < styles.length; i++) {
+          const prop = styles[i];
+          result[prop] = styles.getPropertyValue(prop);
+        }
+        return result;
+      };
+
+      const elements = document.querySelectorAll("*");
+      const limitedElements = Array.from(elements).slice(0, limit);
+      return limitedElements.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          tagName: el.tagName.toLowerCase(),
+          id: el.id || null,
+          className: el.className || null,
+          attributes: Array.from(el.attributes).reduce((acc, attr) => {
+            acc[attr.name] = attr.value;
+            return acc;
+          }, {}),
+          computedStyles: getComputedStyles(el),
+          boundingRect:
+            rect.width || rect.height
+              ? {
+                  x: rect.x,
+                  y: rect.y,
+                  width: rect.width,
+                  height: rect.height,
+                }
+              : null,
+          textContent:
+            typeof el.textContent === "string" ? el.textContent.trim().slice(0, 200) : null,
+        };
+      });
+    },
+    maxElements,
+    { timeout: EXTRACTION_LIMITS.evaluateTimeout },
+  );
+}
+
+/**
+ * Extract images from page
+ * @param {Page} page - Playwright page
+ * @returns {Promise<Array>}
+ */
+async function extractImages(page) {
+  return (
+    page.evaluate(() =>
+      Array.from(document.images).map((img) => ({
+        src: img.src,
+        alt: img.alt,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      })),
+    ),
+    { timeout: EXTRACTION_LIMITS.evaluateTimeout }
+  );
+}
+
+/**
  * Extract UI data from a URL using Playwright
  * @param {string} url - URL to extract from
  * @param {Object} options - Extraction options
  * @returns {Promise<Object>} Extracted data
  */
 export async function extract(url, options = {}) {
+  const maxElements = options.maxElements ?? EXTRACTION_LIMITS.maxElements;
   const browser = await chromium.launch({ headless: true });
   const viewportObj = normalizeViewport(options.viewport);
   const context = await browser.newContext({
     viewport: viewportObj,
-    // Подделываем реальный User-Agent, чтобы обходить примитивные блокировки ботов
     userAgent:
       options.userAgent ||
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -50,93 +170,69 @@ export async function extract(url, options = {}) {
       Object.values(options.screenshots).some(Boolean)),
   );
 
-  // Блокируем тяжелые ресурсы ТОЛЬКО если не запрошены скриншоты.
-  // Если скриншоты нужны, мы грузим всё (включая картинки), чтобы они попали в кадр.
+  // Block heavy resources ONLY if screenshots not requested.
   if (!wantsScreenshots) {
     await context.route(
       "**/*.{png,jpg,jpeg,gif,svg,webp,ico,mp4,webm,ogg,mp3,woff,woff2}",
-      (route) => {
-        route.abort();
-      },
+      (route) => route.abort(),
     );
   }
 
   try {
-    // Используем domcontentloaded, чтобы не виснуть на WebSocket'ах SPA
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    // Ждем дополнительного селектора, если он передан
     if (options.waitFor) {
       await page.waitForSelector(options.waitFor, { timeout: 10000 }).catch(() => {});
     }
 
-    // Extract DOM, styles, CSS variables, images
-    const data = await page.evaluate(() => {
-      const getComputedStyles = (element) => {
-        const styles = window.getComputedStyle(element);
-        const result = {};
-        for (let i = 0; i < styles.length; i++) {
-          const prop = styles[i];
-          result[prop] = styles.getPropertyValue(prop);
+    // Extract data in multiple smaller evaluations to avoid "Target crashed"
+    let cssVariables = {};
+    let pageMeta = { url: "", title: "", meta: {} };
+    let elements = [];
+    let images = [];
+
+    // 1. CSS Variables (lightweight)
+    try {
+      cssVariables = await extractCSSVariables(page);
+    } catch (e) {
+      console.warn("[extract] CSS variables extraction failed:", e.message);
+    }
+
+    // 2. Page meta (lightweight)
+    try {
+      pageMeta = await extractPageMeta(page);
+    } catch (e) {
+      console.warn("[extract] Page meta extraction failed:", e.message);
+    }
+
+    // 3. Elements (heavy - limited count)
+    try {
+      elements = await extractElements(page, maxElements);
+    } catch (e) {
+      console.warn("[extract] Elements extraction failed:", e.message);
+      // Fallback: try with fewer elements
+      if (maxElements > 50) {
+        try {
+          elements = await extractElements(page, 50);
+        } catch (e2) {
+          console.error("[extract] Elements extraction failed even with limit:", e2.message);
         }
-        return result;
-      };
+      }
+    }
 
-      const getCSSVariables = () => {
-        const variables = {};
-        const styles = getComputedStyles(document.documentElement);
-        for (const [key, value] of Object.entries(styles)) {
-          if (key.startsWith("--")) {
-            // value может быть undefined, используем безопасный доступ
-            variables[key] = typeof value === "string" ? value.trim() : "";
-          }
-        }
-        return variables;
-      };
+    // 4. Images (lightweight)
+    try {
+      images = await extractImages(page);
+    } catch (e) {
+      console.warn("[extract] Images extraction failed:", e.message);
+    }
 
-      const extractElements = (selector = "*") => {
-        const elements = document.querySelectorAll(selector);
-        return Array.from(elements).map((el) => ({
-          tagName: el.tagName.toLowerCase(),
-          id: el.id || null,
-          className: el.className || null,
-          attributes: Array.from(el.attributes).reduce((acc, attr) => {
-            acc[attr.name] = attr.value;
-            return acc;
-          }, {}),
-          computedStyles: getComputedStyles(el),
-          boundingRect: el.getBoundingClientRect()
-            ? {
-                x: el.getBoundingClientRect().x,
-                y: el.getBoundingClientRect().y,
-                width: el.getBoundingClientRect().width,
-                height: el.getBoundingClientRect().height,
-              }
-            : null,
-          // textContent может быть null, используем безопасный доступ
-          textContent:
-            typeof el.textContent === "string" ? el.textContent.trim().slice(0, 200) : null,
-        }));
-      };
-
-      return {
-        url: window.location.href,
-        title: document.title,
-        cssVariables: getCSSVariables(),
-        elements: extractElements(),
-        images: Array.from(document.images).map((img) => ({
-          src: img.src,
-          alt: img.alt,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        })),
-        meta: {
-          viewport: document.querySelector('meta[name="viewport"]')?.content,
-          charset: document.characterSet,
-          description: document.querySelector('meta[name="description"]')?.content,
-        },
-      };
-    });
+    const data = {
+      ...pageMeta,
+      cssVariables,
+      elements,
+      images,
+    };
 
     // Screenshots if requested
     if (wantsScreenshots) {

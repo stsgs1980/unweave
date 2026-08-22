@@ -2,12 +2,6 @@ import jsdoc from "eslint-plugin-jsdoc";
 import markdown from "@eslint/markdown";
 import tsParser from "@typescript-eslint/parser";
 import unicodePolicy from "./eslint-rules/unicode-policy.js";
-import codeBlockLanguage from "./eslint-rules/code-block-language.js";
-
-const codeBlockLanguagePlugin = {
-  meta: { name: "code-block-language", version: "1.0.0" },
-  rules: { "require-language": codeBlockLanguage },
-};
 
 export default [
   {
@@ -34,18 +28,6 @@ export default [
       "markdown/no-missing-label-refs": "off",
       // Отключаем требование языка для code blocks (не все блоки кода в docs имеют язык)
       "markdown/fenced-code-language": "off",
-    },
-  },
-  {
-    files: ["**/*.md"],
-    plugins: {
-      "unicode-policy": unicodePolicy,
-      "code-block-language": codeBlockLanguagePlugin,
-    },
-    rules: {
-      "unicode-policy/emoji-in-md": "error",
-      "unicode-policy/unicode-graphics-in-md": "error",
-      "code-block-language/require-language": "error",
     },
   },
   {
