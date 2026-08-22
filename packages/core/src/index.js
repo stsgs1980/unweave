@@ -1,6 +1,14 @@
 // Unified exports for @unweave/core
 import "./types.js"; // JSDoc typedefs for declaration generation
 export { extract, extractMultiple } from "./extract.js";
+export {
+  normalizeViewport,
+  EXTRACTION_LIMITS,
+  extractCSSVariables,
+  extractPageMeta,
+  extractElements,
+  extractImages,
+} from "./extract-helpers.js";
 export { analyze } from "./analyze.js";
 export { generateSpec } from "./spec.js";
 export { generate } from "./generate.js";

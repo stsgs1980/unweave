@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import React, { useEffect } from "react";
 import { toast } from "sonner";
 import {
   Copy,
@@ -16,7 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreviewStage } from "./components/PreviewStage";
-import { PropsTable, PropItem } from "./components/PropsTable";
+import { PropsTable } from "./components/PropsTable";
+import { useCodeGeneration } from "./hooks/useCodeGeneration";
 
 interface CodePreviewProps {
   componentName: string | null;
@@ -25,21 +25,6 @@ interface CodePreviewProps {
 
 type ViewMode = "split" | "preview" | "code";
 
-interface ExtractedElement {
-  tagName: string;
-  className: string | null;
-  id: string | null;
-  attributes: Record<string, string>;
-  computedStyles: Record<string, string>;
-  boundingRect: { x: number; y: number; width: number; height: number } | null;
-  textContent: string | null;
-}
-
-interface FallbackData {
-  html: string;
-  css: string;
-}
-
 /**
  *
  * @param root0
@@ -47,162 +32,35 @@ interface FallbackData {
  * @param root0.jobId
  */
 export default function CodePreview({ componentName, jobId }: CodePreviewProps) {
-  const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("");
-  const [viewMode, setViewMode] = useState<ViewMode>("split");
-  const [selectedVariant, setSelectedVariant] = useState<string>("primary");
-  const [selectedState, setSelectedState] = useState<string>("default");
-  const [fallbackData, setFallbackData] = useState<FallbackData | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-
   const {
-    data,
-    mutate: generateCode,
-    isPending: isMutationPending,
-  } = useMutation({
-    mutationFn: async (params: { jobId: string; componentName: string }) => {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
-      const resData = await response.json();
-      if (!response.ok) throw new Error(resData.error || "Failed to generate code");
-      return {
-        files: (resData.files || {}) as Record<string, string>,
-        spec: resData.spec || null,
-      };
-    },
-    onError: (err: Error) => {
-      setGenerationError(err.message);
-      // Fallback: try to build HTML/CSS from extracted data
-      fetchFallbackData();
-    },
-    onSuccess: () => {
-      setGenerationError(null);
-      setFallbackData(null);
-    },
-  });
-
-  const files = data?.files || {};
-  const spec = data?.spec || null;
-
-  const fetchFallbackData = async () => {
-    if (!jobId || !componentName) return;
-    try {
-      const response = await fetch(`/api/results/${jobId}`);
-      if (!response.ok) return;
-      const result = await response.json();
-      const elements: ExtractedElement[] = result?.extracted?.elements || [];
-      const targetEl = elements.find(
-        (el) =>
-          el.className?.includes(componentName) ||
-          el.id === componentName ||
-          el.tagName.toLowerCase() === componentName.toLowerCase(),
-      );
-      if (targetEl) {
-        const html = buildFallbackHTML(targetEl);
-        const css = buildFallbackCSS(targetEl);
-        setFallbackData({ html, css });
-      }
-    } catch {
-      // Silently fail - fallback will just be null
-    }
-  };
-
-  const buildFallbackHTML = (el: ExtractedElement): string => {
-    const tag = el.tagName;
-    const classAttr = el.className ? ` class="${el.className}"` : "";
-    const idAttr = el.id ? ` id="${el.id}"` : "";
-    const text = el.textContent ? `>${el.textContent}<` : ">";
-    return `<${tag}${idAttr}${classAttr}${text}/${tag}>`;
-  };
-
-  const buildFallbackCSS = (el: ExtractedElement): string => {
-    const styles = el.computedStyles || {};
-    const relevantStyles: string[] = [];
-    const skipProps = new Set(["all", "css-text", "cssfloat", "stylefloat"]);
-    for (const [prop, value] of Object.entries(styles)) {
-      if (skipProps.has(prop.toLowerCase())) continue;
-      if (value && value !== "none" && value !== "normal" && value !== "0px" && value !== "0") {
-        // Only include meaningful styles
-        if (
-          prop.startsWith("color") ||
-          prop.startsWith("background") ||
-          prop.startsWith("border") ||
-          prop.startsWith("font") ||
-          prop.startsWith("text") ||
-          prop.startsWith("margin") ||
-          prop.startsWith("padding") ||
-          prop.startsWith("display") ||
-          prop.startsWith("flex") ||
-          prop.startsWith("grid") ||
-          prop.startsWith("width") ||
-          prop.startsWith("height") ||
-          prop.startsWith("position") ||
-          prop.startsWith("top") ||
-          prop.startsWith("left") ||
-          prop.startsWith("right") ||
-          prop.startsWith("bottom") ||
-          prop.startsWith("z-index")
-        ) {
-          relevantStyles.push(`  ${prop}: ${value};`);
-        }
-      }
-    }
-    const selector = el.className ? `.${el.className.split(" ")[0]}` : el.tagName;
-    return relevantStyles.length > 0
-      ? `${selector} {\n${relevantStyles.join("\n")}\n}`
-      : `/* No significant computed styles found for ${selector} */`;
-  };
+    files,
+    spec,
+    activeTab,
+    setActiveTab,
+    viewMode,
+    setViewMode,
+    selectedVariant,
+    setSelectedVariant,
+    selectedState,
+    setSelectedState,
+    variants,
+    states,
+    propsList,
+    fallbackData,
+    isGenerating,
+    generationError,
+    isMutationPending,
+    handleCopy,
+    handleDownload,
+    copied,
+    currentCode,
+    showFallback,
+    fallbackCode,
+  } = useCodeGeneration({ componentName, jobId, spec: null });
 
   useEffect(() => {
-    if (componentName && jobId) {
-      setIsGenerating(true);
-      setGenerationError(null);
-      generateCode({ jobId, componentName });
-      setSelectedVariant("primary");
-      setSelectedState("default");
-    }
-  }, [componentName, jobId, generateCode]);
-
-  // Track generation state
-  useEffect(() => {
-    if (!isMutationPending && isGenerating) {
-      setIsGenerating(false);
-    }
-  }, [isMutationPending, isGenerating]);
-
-  const fileNames = Object.keys(files);
-
-  useEffect(() => {
-    if (fileNames.length > 0 && (!activeTab || !fileNames.includes(activeTab))) {
-      setActiveTab(fileNames[0]);
-    }
-  }, [fileNames, activeTab]);
-
-  const handleCopy = (code: string) => {
-    if (!code) return;
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    toast.success("Code copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownload = (fileName: string, code: string) => {
-    if (!code) return;
-    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success(`Downloaded ${fileName}`);
-  };
+    if (!componentName) return;
+  }, [componentName]);
 
   if (!componentName) {
     return (
@@ -216,35 +74,7 @@ export default function CodePreview({ componentName, jobId }: CodePreviewProps) 
     );
   }
 
-  const currentCode = files[activeTab] || "";
-  const variants: string[] =
-    spec?.variants && Array.isArray(spec.variants) && spec.variants.length > 0
-      ? spec.variants.map((v: any) => (typeof v === "string" ? v : v.name || v.key))
-      : ["primary", "secondary", "ghost", "outline", "destructive"];
-  const states: string[] = ["default", "hover", "focus", "disabled", "loading"];
-
-  const propsList: PropItem[] =
-    spec?.props && typeof spec.props === "object"
-      ? Object.entries(spec.props).map(([key, p]: [string, any]) => ({
-          name: key,
-          type: p.type || "string",
-          defaultVal: p.default !== undefined ? String(p.default) : "-",
-          required: p.optional === false,
-        }))
-      : [
-          { name: "variant", type: "string", defaultVal: "primary" },
-          { name: "size", type: "string", defaultVal: "md" },
-          { name: "disabled", type: "boolean", defaultVal: "false" },
-        ];
-
-  // Determine what to show in code view
-  const showFallback = !currentCode && fallbackData;
-  const fallbackHtml = fallbackData?.html || "";
-  const fallbackCss = fallbackData?.css || "";
-  const fallbackCode =
-    fallbackHtml && fallbackCss
-      ? `<!-- HTML -->\n${fallbackHtml}\n\n/* CSS */\n${fallbackCss}`
-      : "// No extracted data available for fallback";
+  const fileNames = Object.keys(files);
 
   return (
     <div className="flex h-full flex-col bg-background">

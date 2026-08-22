@@ -8,11 +8,21 @@ import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Layers, ArrowLeft, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
+import { ExternalLink, Layers, ArrowLeft, RefreshCw } from "lucide-react";
 import { useWizardStore } from "@/store/wizard-store";
 import { Button } from "@/components/ui/button";
 import ComponentTree from "./ComponentTree";
 import CodePreview from "./CodePreview";
+import {
+  ProcessingStatusView,
+  FailedStatusView,
+  StatusLoadingView,
+  StatusErrorView,
+  ResultsLoadingView,
+  ResultsErrorView,
+  NoComponentsView,
+  NoExtractionSelectedView,
+} from "./components/StatusViews";
 
 interface JobStatus {
   id: string;
@@ -125,125 +135,32 @@ function WorkspaceContent() {
   }, [components, selectedComponent]);
 
   if (!effectiveJobId && !isStatusLoading) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <Layers className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h1 className="text-xl font-bold text-foreground">No Extraction Selected</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md">
-          Run a new website extraction on the Dashboard to inspect components and design tokens in
-          Workspace.
-        </p>
-        <div className="mt-6">
-          <Link href="/">
-            <Button className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Go to Dashboard
-            </Button>
-          </Link>
-        </div>
-      </main>
-    );
+    return <NoExtractionSelectedView />;
   }
 
   if (isStatusLoading) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-sm text-muted-foreground">Loading job status...</p>
-      </main>
-    );
+    return <StatusLoadingView />;
   }
 
   if (isStatusError) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
-        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
-        <h1 className="text-xl font-bold text-foreground">Failed to Load Job Status</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md">
-          Could not retrieve the extraction job status. Please try again.
-        </p>
-        <div className="mt-6 flex gap-3">
-          <Button onClick={() => refetchStatus()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </Button>
-          <Link href="/">
-            <Button variant="outline">Go to Dashboard</Button>
-          </Link>
-        </div>
-      </main>
-    );
+    return <StatusErrorView refetchStatus={refetchStatus} />;
   }
 
   // Handle job status states
   if (jobStatus) {
     // Processing / Pending - show progress
     if (jobStatus.status === "pending" || jobStatus.status === "processing") {
-      return (
-        <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
-          <div className="w-full max-w-md">
-            <div className="flex items-center gap-2 mb-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <h1 className="text-lg font-semibold text-foreground">
-                {jobStatus.status === "pending"
-                  ? "Starting Extraction..."
-                  : "Extracting Components"}
-              </h1>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4 text-center">
-              {jobStatus.message || `Progress: ${jobStatus.progress}%`}
-            </p>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-500 ease-out"
-                style={{ width: `${jobStatus.progress}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground text-center font-mono">
-              {jobStatus.progress}%
-            </p>
-            {jobStatus.url && (
-              <p className="mt-4 text-xs text-muted-foreground text-center truncate">
-                Source: {jobStatus.url}
-              </p>
-            )}
-          </div>
-        </main>
-      );
+      return <ProcessingStatusView jobStatus={jobStatus} projectUrl={projectUrl} />;
     }
 
     // Failed - show error with retry
     if (jobStatus.status === "failed") {
       return (
-        <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-          <h1 className="text-xl font-bold text-foreground">Extraction Failed</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-md">
-            {jobStatus.error || jobStatus.message || "An unknown error occurred during extraction."}
-          </p>
-          {jobStatus.url && (
-            <p className="mt-2 text-xs text-muted-foreground truncate max-w-md">
-              Source: {jobStatus.url}
-            </p>
-          )}
-          <div className="mt-6 flex gap-3">
-            <Button
-              onClick={() => {
-                setShowResults(false);
-                refetchStatus();
-              }}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Try Again
-            </Button>
-            <Link href="/">
-              <Button variant="outline">New Extraction</Button>
-            </Link>
-          </div>
-        </main>
+        <FailedStatusView
+          jobStatus={jobStatus}
+          refetchStatus={refetchStatus}
+          projectUrl={projectUrl}
+        />
       );
     }
 
@@ -252,62 +169,17 @@ function WorkspaceContent() {
 
   // If completed but results not loaded yet
   if (showResults && isResultsLoading) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-sm text-muted-foreground">Loading extraction results...</p>
-      </main>
-    );
+    return <ResultsLoadingView />;
   }
 
   // If completed but results error
   if (showResults && isResultsError) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
-        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
-        <h1 className="text-xl font-bold text-foreground">Failed to Load Results</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md">
-          {resultsError?.message || "Could not load extraction results."}
-        </p>
-        <div className="mt-6 flex gap-3">
-          <Button onClick={() => refetchResults()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </Button>
-          <Link href="/">
-            <Button variant="outline">Go to Dashboard</Button>
-          </Link>
-        </div>
-      </main>
-    );
+    return <ResultsErrorView resultsError={resultsError} refetchResults={refetchResults} />;
   }
 
   // Completed with results - check for components
   if (showResults && components.length === 0) {
-    return (
-      <main className="flex h-[calc(100vh-65px)] flex-col items-center justify-center p-8 text-center">
-        <Layers className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <h1 className="text-xl font-bold text-foreground">No Components Found</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md">
-          The extraction completed but no UI components were detected. This can happen if the page
-          is empty, uses heavy JavaScript rendering, or has restrictive CSP.
-        </p>
-        {projectUrl && (
-          <p className="mt-2 text-xs text-muted-foreground truncate max-w-md">
-            Source: {projectUrl}
-          </p>
-        )}
-        <div className="mt-6 flex gap-3">
-          <Button onClick={() => refetchStatus()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Re-extract
-          </Button>
-          <Link href="/">
-            <Button variant="outline">New Extraction</Button>
-          </Link>
-        </div>
-      </main>
-    );
+    return <NoComponentsView projectUrl={projectUrl} refetchStatus={refetchStatus} />;
   }
 
   // Completed with components - show workspace
@@ -332,7 +204,6 @@ function WorkspaceContent() {
                 className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
               >
                 <span>{projectUrl}</span>
-                <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
