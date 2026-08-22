@@ -84,6 +84,9 @@ importers:
         specifier: ^1.62.0
         version: 1.62.1
     devDependencies:
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.43)(lightningcss@1.32.0)
