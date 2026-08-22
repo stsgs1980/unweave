@@ -19,6 +19,7 @@ export default function StepProgress() {
     format,
     extraOptions,
     selectedElements,
+    extractionPhases,
     setJobId,
     setStep,
     reset: resetWizard,
@@ -48,6 +49,7 @@ export default function StepProgress() {
             format,
             extraOptions,
             selectedElements,
+            extractionPhases,
           },
         }),
       });

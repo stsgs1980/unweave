@@ -27,50 +27,66 @@ export async function pipeline(urls, options = {}, onProgress) {
   const results = [];
 
   for (const url of urlArray) {
+    const pipelineStart = Date.now();
     try {
       console.log(`[pipeline] Processing: ${url}`);
+      if (onProgress) onProgress(0, "Starting pipeline...");
 
       // Step 1: Extract
-      if (onProgress) onProgress(25, "Extracting components...");
+      const extractStart = Date.now();
+      if (onProgress) onProgress(10, "Extracting components...");
       console.log("[pipeline] Extracting...");
       const extracted = await extract(url, {
         screenshot: options.screenshot,
         screenshotTypes: options.screenshotTypes,
         viewport: options.viewport,
         waitFor: options.waitFor,
+        extractionPhases: options.extractionPhases,
       });
+      const extractTime = Date.now() - extractStart;
+      console.log(`[pipeline] Extract completed in ${extractTime}ms`);
 
       // Step 2: Analyze
-      if (onProgress) onProgress(50, "Analyzing design system...");
+      const analyzeStart = Date.now();
+      if (onProgress) onProgress(40, "Analyzing design system...");
       console.log("[pipeline] Analyzing...");
       const analysis = analyze(extracted);
+      const analyzeTime = Date.now() - analyzeStart;
+      console.log(`[pipeline] Analyze completed in ${analyzeTime}ms`);
 
       // Step 3: Generate spec (if component specified)
       let spec = null;
       if (options.component) {
-        if (onProgress) onProgress(75, "Generating specification...");
+        const specStart = Date.now();
+        if (onProgress) onProgress(60, "Generating specification...");
         console.log("[pipeline] Generating spec...");
         spec = generateSpec(analysis, {
           componentName: options.component,
           componentType: options.componentType || inferComponentType(options.component),
           source: url,
         });
+        const specTime = Date.now() - specStart;
+        console.log(`[pipeline] Spec generated in ${specTime}ms`);
       }
 
       // Step 4: Generate code (if format specified)
       let generated = null;
       if (options.format && spec) {
-        if (onProgress) onProgress(90, "Generating code...");
+        const generateStart = Date.now();
+        if (onProgress) onProgress(80, "Generating code...");
         console.log("[pipeline] Generating code...");
         generated = generate(spec, {
           format: options.format,
           typescript: options.typescript,
         });
+        const generateTime = Date.now() - generateStart;
+        console.log(`[pipeline] Code generated in ${generateTime}ms`);
       }
 
       // Step 5: Save to reference catalog (if learn option)
       let reference = null;
       if (options.learn) {
+        const refStart = Date.now();
         console.log("[pipeline] Learning reference...");
         reference = await saveReference(options.learn, {
           url,
@@ -80,10 +96,13 @@ export async function pipeline(urls, options = {}, onProgress) {
           generated,
           timestamp: new Date().toISOString(),
         });
+        const refTime = Date.now() - refStart;
+        console.log(`[pipeline] Reference saved in ${refTime}ms`);
       }
 
+      const totalTime = Date.now() - pipelineStart;
       if (onProgress) onProgress(100, "Extraction completed");
-      console.log(`[pipeline] Completed: ${url}`);
+      console.log(`[pipeline] Completed: ${url} (total: ${totalTime}ms)`);
 
       results.push({
         url,
@@ -93,6 +112,14 @@ export async function pipeline(urls, options = {}, onProgress) {
         spec,
         generated,
         reference,
+        timing: {
+          total: totalTime,
+          extract: extractTime,
+          analyze: analyzeTime,
+          spec: specTime || 0,
+          generate: generateTime || 0,
+          reference: refTime || 0,
+        },
       });
     } catch (error) {
       console.error(`[pipeline] Failed: ${url}`, error);

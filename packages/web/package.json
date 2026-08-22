@@ -16,7 +16,6 @@
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-icons": "^1.3.2",
     "@tanstack/react-query": "^5.101.4",
-    "@tremor/react": "4.0.0-beta-tremor-v4.4",
     "@unweave/core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

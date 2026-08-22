@@ -6,7 +6,6 @@ import { parentPort, workerData } from "worker_threads";
 import { logger } from "@/lib/logger";
 
 /**
- *
  * @param level
  * @param message
  * @param data
@@ -53,7 +52,14 @@ async function run(): Promise<void> {
     };
 
     sendWorkerLog("info", `Executing pipeline for ${url}`);
-    const results = await pipeline(url, options || {}, onProgress);
+    const results = await pipeline(
+      url,
+      {
+        ...options,
+        extractionPhases: options?.extractionPhases,
+      },
+      onProgress,
+    );
     const result = results[0];
 
     if (result.success) {

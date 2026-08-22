@@ -16,10 +16,13 @@ export default function Step4Summary() {
     format,
     extraOptions,
     selectedElements,
+    extractionPhases,
     setStep,
   } = useWizardStore();
 
   const handleLaunch = () => {
+    // Store extractionPhases in the wizard store for the worker to pick up
+    useWizardStore.getState().setExtractionPhases(extractionPhases);
     setStep("progress");
   };
 

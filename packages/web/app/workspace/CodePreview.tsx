@@ -18,6 +18,7 @@ import { PreviewStage } from "./components/PreviewStage";
 import { PropsTable } from "./components/PropsTable";
 import { useCodeGeneration } from "./hooks/useCodeGeneration";
 import { CodePreviewHeader } from "./components/CodePreviewHeader";
+import { formatCode } from "./utils/code-formatter";
 
 interface CodePreviewProps {
   componentName: string | null;
@@ -156,7 +157,29 @@ export default function CodePreview({ componentName, jobId }: CodePreviewProps) 
                   <code>
                     {showFallback ? (
                       <>
-                        <span className="text-zinc-400">{fallbackCode}</span>
+                        {(() => {
+                          const htmlMatch = fallbackCode.match(
+                            /<!-- HTML -->([\s\S]*?)\n\/\* CSS \*\//,
+                          );
+                          const cssMatch = fallbackCode.match(/\/\* CSS \*\/([\s\S]*)/);
+                          return (
+                            <>
+                              {htmlMatch && (
+                                <span className="text-zinc-400">
+                                  {formatCode(htmlMatch[1].trim(), "html")}
+                                </span>
+                              )}
+                              {cssMatch && (
+                                <>
+                                  <span className="text-zinc-500">\n/* CSS */\n</span>
+                                  <span className="text-zinc-400">
+                                    {formatCode(cssMatch[1].trim(), "css")}
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
                         {fallbackData && (
                           <>
                             <span className="text-zinc-500 ml-2">

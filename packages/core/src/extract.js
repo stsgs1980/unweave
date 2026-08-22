@@ -16,6 +16,12 @@ import {
  */
 export async function extract(url, options = {}) {
   const maxElements = options.maxElements ?? EXTRACTION_LIMITS.maxElements;
+  const extractionPhases = options.extractionPhases ?? {
+    cssVariables: true,
+    pageMeta: true,
+    elements: true,
+    images: true,
+  };
   const browser = await chromium.launch({ headless: true });
   const viewportObj = normalizeViewport(options.viewport);
   const context = await browser.newContext({
@@ -57,39 +63,47 @@ export async function extract(url, options = {}) {
     let images = [];
 
     // 1. CSS Variables (lightweight)
-    try {
-      cssVariables = await extractCSSVariables(page);
-    } catch (e) {
-      console.warn("[extract] CSS variables extraction failed:", e.message);
+    if (extractionPhases.cssVariables) {
+      try {
+        cssVariables = await extractCSSVariables(page);
+      } catch (e) {
+        console.warn("[extract] CSS variables extraction failed:", e.message);
+      }
     }
 
     // 2. Page meta (lightweight)
-    try {
-      pageMeta = await extractPageMeta(page);
-    } catch (e) {
-      console.warn("[extract] Page meta extraction failed:", e.message);
+    if (extractionPhases.pageMeta) {
+      try {
+        pageMeta = await extractPageMeta(page);
+      } catch (e) {
+        console.warn("[extract] Page meta extraction failed:", e.message);
+      }
     }
 
     // 3. Elements (heavy - limited count)
-    try {
-      elements = await extractElements(page, maxElements);
-    } catch (e) {
-      console.warn("[extract] Elements extraction failed:", e.message);
-      // Fallback: try with fewer elements
-      if (maxElements > 50) {
-        try {
-          elements = await extractElements(page, 50);
-        } catch (e2) {
-          console.error("[extract] Elements extraction failed even with limit:", e2.message);
+    if (extractionPhases.elements) {
+      try {
+        elements = await extractElements(page, maxElements);
+      } catch (e) {
+        console.warn("[extract] Elements extraction failed:", e.message);
+        // Fallback: try with fewer elements
+        if (maxElements > 50) {
+          try {
+            elements = await extractElements(page, 50);
+          } catch (e2) {
+            console.error("[extract] Elements extraction failed even with limit:", e2.message);
+          }
         }
       }
     }
 
     // 4. Images (lightweight)
-    try {
-      images = await extractImages(page);
-    } catch (e) {
-      console.warn("[extract] Images extraction failed:", e.message);
+    if (extractionPhases.images) {
+      try {
+        images = await extractImages(page);
+      } catch (e) {
+        console.warn("[extract] Images extraction failed:", e.message);
+      }
     }
 
     const data = {
@@ -114,18 +128,25 @@ export async function extract(url, options = {}) {
       data.screenshots = {};
 
       for (const type of types) {
-        switch (type) {
-          case "full":
-          case "fullPage":
-            data.screenshots.full = await page.screenshot({ fullPage: true, type: "png" });
-            break;
-          case "viewport":
-            data.screenshots.viewport = await page.screenshot({ type: "png" });
-            break;
-          case "mobile":
-            await page.setViewportSize({ width: 375, height: 667 });
-            data.screenshots.mobile = await page.screenshot({ type: "png" });
-            break;
+        try {
+          switch (type) {
+            case "full":
+            case "fullPage":
+              data.screenshots.full = await page.screenshot({ fullPage: true, type: "png" });
+              break;
+            case "viewport":
+              data.screenshots.viewport = await page.screenshot({ type: "png" });
+              break;
+            case "mobile":
+              await page.setViewportSize({ width: 375, height: 667 });
+              data.screenshots.mobile = await page.screenshot({ type: "png" });
+              break;
+            default:
+              console.warn(`[extract] Unknown screenshot type: ${type}`);
+          }
+        } catch (e) {
+          console.warn(`[extract] Screenshot "${type}" failed:`, e.message);
+          // Don't throw - preserve other screenshots and extracted data
         }
       }
     }

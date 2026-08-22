@@ -22,6 +22,46 @@ export interface ExtraOptions {
   tests: boolean;
 }
 
+/**
+ * Extraction phases available for selection
+ */
+export interface ExtractionPhases {
+  cssVariables: boolean;
+  pageMeta: boolean;
+  elements: boolean;
+  images: boolean;
+}
+
+/**
+ * Preset configurations for extraction phases
+ */
+export const EXTRACTION_PRESETS: Record<string, ExtractionPhases> = {
+  minimal: {
+    cssVariables: true,
+    pageMeta: true,
+    elements: false,
+    images: false,
+  },
+  standard: {
+    cssVariables: true,
+    pageMeta: true,
+    elements: true,
+    images: false,
+  },
+  full: {
+    cssVariables: true,
+    pageMeta: true,
+    elements: true,
+    images: true,
+  },
+  custom: {
+    cssVariables: true,
+    pageMeta: true,
+    elements: true,
+    images: true,
+  },
+};
+
 interface WizardState {
   step: WizardStep;
   url: string;
@@ -30,6 +70,7 @@ interface WizardState {
   screenshots: ScreenshotOptions;
   format: OutputFormat;
   extraOptions: ExtraOptions;
+  extractionPhases: ExtractionPhases;
   selectedElements: string[];
   jobId: string | null;
   isOpen: boolean;
@@ -41,6 +82,8 @@ interface WizardState {
   setScreenshots: (screenshots: Partial<ScreenshotOptions>) => void;
   setFormat: (format: OutputFormat) => void;
   setExtraOptions: (extra: Partial<ExtraOptions>) => void;
+  setExtractionPhases: (phases: Partial<ExtractionPhases>) => void;
+  applyPreset: (presetName: keyof typeof EXTRACTION_PRESETS) => void;
   toggleSelectedElement: (elementId: string) => void;
   setSelectedElements: (elements: string[]) => void;
   setJobId: (id: string | null) => void;
@@ -50,6 +93,13 @@ interface WizardState {
 }
 
 const initialElements = ["header-nav", "hero-section", "cta-buttons", "feature-cards"];
+
+const defaultPhases: ExtractionPhases = {
+  cssVariables: true,
+  pageMeta: true,
+  elements: true,
+  images: false,
+};
 
 export const useWizardStore = create<WizardState>((set) => ({
   step: 1,
@@ -69,7 +119,8 @@ export const useWizardStore = create<WizardState>((set) => ({
     storybook: true,
     tests: false,
   },
-  selectedElements: initialElements,
+  extractionPhases: defaultPhases,
+  selectedElements: ["header-nav", "hero-section", "cta-buttons", "feature-cards"],
   jobId: null,
   isOpen: false,
 
@@ -80,6 +131,12 @@ export const useWizardStore = create<WizardState>((set) => ({
   setScreenshots: (opts) => set((state) => ({ screenshots: { ...state.screenshots, ...opts } })),
   setFormat: (format) => set({ format }),
   setExtraOptions: (opts) => set((state) => ({ extraOptions: { ...state.extraOptions, ...opts } })),
+  setExtractionPhases: (opts) =>
+    set((state) => ({ extractionPhases: { ...state.extractionPhases, ...opts } })),
+  applyPreset: (presetName) =>
+    set((state) => ({
+      extractionPhases: { ...state.extractionPhases, ...EXTRACTION_PRESETS[presetName] },
+    })),
   toggleSelectedElement: (elementId) =>
     set((state) => {
       const exists = state.selectedElements.includes(elementId);

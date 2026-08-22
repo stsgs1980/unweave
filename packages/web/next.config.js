@@ -6,9 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = {
   transpilePackages: ["@unweave/core"],
-  turbopack: {
-    root: resolve(__dirname, "../.."),
-  },
+  // Disable Turbopack due to HMR panic bug (Cell no longer exists)
+  // turbopack: {
+  //   root: resolve(__dirname, "../.."),
+  // },
 };
 
 export default nextConfig;
