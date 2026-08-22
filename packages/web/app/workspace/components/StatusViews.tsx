@@ -22,9 +22,10 @@ interface StatusViewProps {
 
 /**
  * Renders the pending/processing status view with progress bar
- * @param root0
- * @param root0.jobStatus
- * @param root0.projectUrl
+ * @param props - Component props
+ * @param props.jobStatus - Current job status
+ * @param props.projectUrl - Optional source URL
+ * @returns The rendered processing status view
  */
 export function ProcessingStatusView({ jobStatus, projectUrl }: StatusViewProps) {
   return (
@@ -60,10 +61,11 @@ export function ProcessingStatusView({ jobStatus, projectUrl }: StatusViewProps)
 
 /**
  * Renders the failed status view with retry options
- * @param root0
- * @param root0.jobStatus
- * @param root0.refetchStatus
- * @param root0.projectUrl
+ * @param props - Component props
+ * @param props.jobStatus - Current job status
+ * @param props.refetchStatus - Function to retry the job
+ * @param props.projectUrl - Optional source URL
+ * @returns The rendered failed status view
  */
 export function FailedStatusView({ jobStatus, refetchStatus, projectUrl }: StatusViewProps) {
   return (
@@ -91,6 +93,7 @@ export function FailedStatusView({ jobStatus, refetchStatus, projectUrl }: Statu
 
 /**
  * Renders the loading job status view
+ * @returns The rendered loading status view
  */
 export function StatusLoadingView() {
   return (
@@ -103,8 +106,9 @@ export function StatusLoadingView() {
 
 /**
  * Renders the job status error view
- * @param root0
- * @param root0.refetchStatus
+ * @param props - Component props
+ * @param props.refetchStatus - Function to retry loading job status
+ * @returns The rendered status error view
  */
 export function StatusErrorView({ refetchStatus }: { refetchStatus: () => void }) {
   return (
@@ -129,6 +133,7 @@ export function StatusErrorView({ refetchStatus }: { refetchStatus: () => void }
 
 /**
  * Renders the results loading view
+ * @returns The rendered results loading view
  */
 export function ResultsLoadingView() {
   return (
@@ -141,9 +146,10 @@ export function ResultsLoadingView() {
 
 /**
  * Renders the results error view
- * @param root0
- * @param root0.resultsError
- * @param root0.refetchResults
+ * @param props - Component props
+ * @param props.resultsError - Error that occurred during results loading
+ * @param props.refetchResults - Function to retry loading results
+ * @returns The rendered results error view
  */
 export function ResultsErrorView({
   resultsError,
@@ -174,9 +180,10 @@ export function ResultsErrorView({
 
 /**
  * Renders the no components found view
- * @param root0
- * @param root0.projectUrl
- * @param root0.refetchStatus
+ * @param props - Component props
+ * @param props.projectUrl - Optional source URL
+ * @param props.refetchStatus - Function to retry the extraction
+ * @returns The rendered no components view
  */
 export function NoComponentsView({
   projectUrl,
@@ -211,6 +218,7 @@ export function NoComponentsView({
 
 /**
  * Renders the no extraction selected view
+ * @returns The rendered no extraction selected view
  */
 export function NoExtractionSelectedView() {
   return (

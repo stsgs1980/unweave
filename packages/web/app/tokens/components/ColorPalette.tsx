@@ -16,11 +16,12 @@ interface ColorPaletteProps {
 }
 
 /**
- *
- * @param root0
- * @param root0.colors
- * @param root0.copiedToken
- * @param root0.onCopy
+ * Renders a color palette with copyable color tokens.
+ * @param props - Component props
+ * @param props.colors - Array of color tokens
+ * @param props.copiedToken - Currently copied token value/varName
+ * @param props.onCopy - Callback when a color is copied
+ * @returns The rendered color palette.
  */
 export function ColorPalette({ colors, copiedToken, onCopy }: ColorPaletteProps) {
   return (

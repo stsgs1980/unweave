@@ -49,11 +49,12 @@ interface UseCodeGenerationReturn {
 }
 
 /**
- *
- * @param root0
- * @param root0.componentName
- * @param root0.jobId
- * @param root0.spec
+ * Hook for managing code generation state and logic.
+ * @param props - Hook props
+ * @param props.componentName - Name of the component to generate code for
+ * @param props.jobId - Job ID to fetch results from
+ * @param props.spec - Optional spec for generating code
+ * @returns Object containing code generation state and handlers.
  */
 export function useCodeGeneration({
   componentName,

@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { LogEntry, LogEntryRow } from "./components/LogEntryRow";
 
 /**
- *
+ * Renders the logs page with filtering and search capabilities.
+ * @returns The rendered logs page.
  */
 export default function LogsPage() {
   const [levelFilter, setLevelFilter] = useState<string>("all");

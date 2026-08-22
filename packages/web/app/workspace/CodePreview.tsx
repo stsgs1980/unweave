@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { PreviewStage } from "./components/PreviewStage";
 import { PropsTable } from "./components/PropsTable";
 import { useCodeGeneration } from "./hooks/useCodeGeneration";
+import { CodePreviewHeader } from "./components/CodePreviewHeader";
 
 interface CodePreviewProps {
   componentName: string | null;
@@ -26,10 +27,11 @@ interface CodePreviewProps {
 type ViewMode = "split" | "preview" | "code";
 
 /**
- *
- * @param root0
- * @param root0.componentName
- * @param root0.jobId
+ * Renders the code preview panel with live preview and generated code.
+ * @param props - Component props
+ * @param props.componentName - Name of the component to preview
+ * @param props.jobId - Job ID for generating code
+ * @returns The rendered code preview panel.
  */
 export default function CodePreview({ componentName, jobId }: CodePreviewProps) {
   const {
@@ -78,85 +80,22 @@ export default function CodePreview({ componentName, jobId }: CodePreviewProps) 
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <div className="flex flex-wrap items-center justify-between border-b border-border bg-muted/20 px-4 py-2 gap-2">
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
-          <button
-            type="button"
-            onClick={() => setViewMode("split")}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              viewMode === "split"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Columns className="h-3.5 w-3.5" />
-            Split
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("preview")}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              viewMode === "preview"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            Preview
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("code")}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              viewMode === "code"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            Code
-          </button>
-        </div>
-
-        {fileNames.length > 0 && (
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {fileNames.map((fileName) => (
-              <button
-                type="button"
-                key={fileName}
-                onClick={() => setActiveTab(fileName)}
-                className={`rounded-md px-3 py-1 font-mono text-xs font-medium transition-colors ${
-                  activeTab === fileName
-                    ? "bg-background text-foreground shadow-sm border border-border"
-                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                }`}
-              >
-                {fileName}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Generation status */}
-        <div className="flex items-center gap-2 ml-auto">
-          {isGenerating || isMutationPending ? (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-              Generating...
-            </span>
-          ) : generationError ? (
-            <span className="flex items-center gap-1.5 text-xs text-destructive">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {showFallback ? "Using extracted fallback" : "Generation failed"}
-            </span>
-          ) : fileNames.length > 0 ? (
-            <span className="text-xs text-emerald-500 flex items-center gap-1">
-              <Check className="h-3.5 w-3.5" />
-              Ready
-            </span>
-          ) : null}
-        </div>
-      </div>
+      <CodePreviewHeader
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        fileNames={fileNames}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isGenerating={isGenerating}
+        isMutationPending={isMutationPending}
+        generationError={generationError}
+        fallbackData={fallbackData}
+        copied={copied}
+        handleCopy={handleCopy}
+        handleDownload={handleDownload}
+        currentCode={currentCode}
+        fallbackCode={fallbackCode}
+      />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div

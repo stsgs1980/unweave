@@ -11,8 +11,9 @@ export interface LogEntry {
 }
 
 /**
- *
- * @param level
+ * Returns the Tailwind CSS classes for a log level.
+ * @param level - The log level
+ * @returns Tailwind CSS class string for the level badge.
  */
 function getLevelColor(level: string): string {
   switch (level) {
@@ -28,8 +29,9 @@ function getLevelColor(level: string): string {
 }
 
 /**
- *
- * @param timestamp
+ * Formats a timestamp string to HH:MM:SS.mmm format.
+ * @param timestamp - ISO timestamp string
+ * @returns Formatted time string (HH:MM:SS.mmm)
  */
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -45,9 +47,10 @@ interface LogEntryRowProps {
 }
 
 /**
- *
- * @param root0
- * @param root0.log
+ * Renders a single log entry row.
+ * @param props - Component props
+ * @param props.log - The log entry to display
+ * @returns The rendered log entry row.
  */
 export function LogEntryRow({ log }: LogEntryRowProps) {
   return (

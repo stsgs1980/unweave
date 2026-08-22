@@ -31,6 +31,7 @@ interface ExtractedTypographyToken {
 
 /**
  * Renders the interactive Design Tokens View.
+ * @returns The rendered tokens view.
  */
 export default function TokensView() {
   const searchParams = useSearchParams();

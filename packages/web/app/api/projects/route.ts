@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 /**
  * Extracts a display hostname or friendly name from a project URL.
  * @param rawUrl - The raw target URL.
+ * @returns The hostname or original URL if parsing fails.
  */
 function getHostOrName(rawUrl?: string): string {
   if (!rawUrl) return "Untitled Project";
