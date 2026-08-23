@@ -12,9 +12,19 @@ import {
  * Extract UI data from a URL using Playwright
  * @param {string} url - URL to extract from
  * @param {Object} options - Extraction options
+ * @param {Function} [options.onProgress] - Optional callback (fraction 0..1, message) for sub-step progress
  * @returns {Promise<Object>} Extracted data
  */
 export async function extract(url, options = {}) {
+  const report = (fraction, message) => {
+    if (typeof options.onProgress === "function") {
+      try {
+        options.onProgress(Math.min(1, Math.max(0, fraction)), message);
+      } catch {
+        // Progress reporting must never break extraction
+      }
+    }
+  };
   const maxElements = options.maxElements ?? EXTRACTION_LIMITS.maxElements;
   const extractionPhases = options.extractionPhases ?? {
     cssVariables: true,
@@ -22,6 +32,7 @@ export async function extract(url, options = {}) {
     elements: true,
     images: true,
   };
+  report(0.02, "Extracting components... launching browser");
   const browser = await chromium.launch({ headless: true });
   const viewportObj = normalizeViewport(options.viewport);
   const context = await browser.newContext({
@@ -51,6 +62,7 @@ export async function extract(url, options = {}) {
 
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    report(0.4, "Extracting components... page loaded");
 
     if (options.waitFor) {
       await page.waitForSelector(options.waitFor, { timeout: 10000 }).catch((e) => {
@@ -59,6 +71,7 @@ export async function extract(url, options = {}) {
         warnings.push(message);
       });
     }
+    report(0.5, "Extracting components... reading CSS variables");
 
     // Extract data in multiple smaller evaluations to avoid "Target crashed"
     let cssVariables = {};
@@ -79,6 +92,7 @@ export async function extract(url, options = {}) {
 
     // 2. Page meta (lightweight)
     if (extractionPhases.pageMeta) {
+      report(0.6, "Extracting components... reading page metadata");
       try {
         pageMeta = await extractPageMeta(page);
       } catch (e) {
@@ -89,6 +103,7 @@ export async function extract(url, options = {}) {
 
     // 3. Elements (heavy - limited count)
     if (extractionPhases.elements) {
+      report(0.7, "Extracting components... scanning DOM elements");
       try {
         elements = await extractElements(page, maxElements);
       } catch (e) {
@@ -108,6 +123,7 @@ export async function extract(url, options = {}) {
 
     // 4. Images (lightweight)
     if (extractionPhases.images) {
+      report(0.85, "Extracting components... collecting images");
       try {
         images = await extractImages(page);
       } catch (e) {
@@ -138,7 +154,12 @@ export async function extract(url, options = {}) {
 
       data.screenshots = {};
 
-      for (const type of types) {
+      for (let i = 0; i < types.length; i++) {
+        const type = types[i];
+        report(
+          0.9 + 0.1 * (i / types.length),
+          `Extracting components... capturing screenshot ${i + 1}/${types.length}`,
+        );
         try {
           switch (type) {
             case "full":

@@ -33,9 +33,9 @@ export async function pipeline(urls, options = {}, onProgress) {
       console.log(`[pipeline] Processing: ${url}`);
       if (onProgress) onProgress(0, "Starting pipeline...");
 
-      // Step 1: Extract
+      // Step 1: Extract (sub-steps mapped to 5%..35%)
       const extractStart = Date.now();
-      if (onProgress) onProgress(10, "Extracting components...");
+      if (onProgress) onProgress(5, "Extracting components...");
       console.log("[pipeline] Extracting...");
       const extracted = await extract(url, {
         screenshot: options.screenshot,
@@ -44,6 +44,7 @@ export async function pipeline(urls, options = {}, onProgress) {
         viewport: options.viewport,
         waitFor: options.waitFor,
         extractionPhases: options.extractionPhases,
+        onProgress: onProgress ? (f, m) => onProgress(5 + f * 30, m) : undefined,
       });
       const extractTime = Date.now() - extractStart;
       console.log(`[pipeline] Extract completed in ${extractTime}ms`);
@@ -56,9 +57,9 @@ export async function pipeline(urls, options = {}, onProgress) {
       const analyzeTime = Date.now() - analyzeStart;
       console.log(`[pipeline] Analyze completed in ${analyzeTime}ms`);
 
-      let specTime = 0;
-      let generateTime = 0;
-      let refTime = 0;
+      let specTime = 0,
+        generateTime = 0,
+        refTime = 0;
 
       // Step 3: Generate spec (if component specified)
       let spec = null;
