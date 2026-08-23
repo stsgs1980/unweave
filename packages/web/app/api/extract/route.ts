@@ -4,8 +4,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createJob, updateJob, getJob } from "@/lib/jobStore";
-import { logger, addLogEntry } from "@/lib/logger";
-import { resolveStage } from "@/lib/pipeline-stages";
+import { logger } from "@/lib/logger";
+import {
+  createWorkerMessageHandler,
+  createWorkerExitHandler,
+  WorkerLifecycleState,
+  type WorkerLifecycleDeps,
+} from "@/lib/worker-lifecycle";
 import { saveJobScreenshots } from "@/lib/screenshot-store";
 import {
   registerWorker,
@@ -47,108 +52,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     logger.info("API:Extract", `Worker spawned for job ID ${jobId}`);
     registerWorker(jobId, worker);
 
-    let stages: Array<{ stage: string; at: string }> = [];
-    let terminalStatusSent = false;
-    let lastWorkerMessage = "none";
+    const lifecycle = new WorkerLifecycleState();
+    const deps: WorkerLifecycleDeps = {
+      saveScreenshots: saveJobScreenshots,
+      updateJob,
+      getJob,
+      unregister: unregisterWorker,
+      isCancelled: isJobCancelled,
+      log: logger,
+    };
     // Listen to worker messages and update DB
-    worker.on("message", async (msg: any) => {
-      try {
-        lastWorkerMessage = `${msg.type}${msg.type === "progress" ? ` ${msg.progress}%` : ""}`;
-        if (isJobCancelled(jobId)) {
-          logger.info(
-            "API:Extract",
-            `Dropping late ${msg.type} message for cancelled job ${jobId}`,
-          );
-          return;
-        }
-        if (msg.type === "log" && msg.entry) {
-          addLogEntry({ ...msg.entry, jobId });
-        } else if (msg.type === "progress") {
-          const stage = resolveStage(msg.message ?? "");
-          if (stage && (stages.length === 0 || stages[stages.length - 1].stage !== stage)) {
-            stages = [...stages, { stage, at: new Date().toISOString() }];
-          }
-          await updateJob(jobId, {
-            status: "processing",
-            progress: msg.progress,
-            message: msg.message,
-            ...(stages.length > 0 ? { stages } : {}),
-          });
-        } else if (msg.type === "completed") {
-          try {
-            const saved = await saveJobScreenshots(jobId, msg.result?.extracted?.screenshots);
-            if (saved.length > 0) {
-              logger.info("API:Extract", `Saved ${saved.length} screenshot(s) for job ${jobId}`);
-            }
-          } catch (saveError) {
-            logger.warn("API:Extract", `Failed to save screenshots for job ${jobId}`, saveError);
-          }
-          terminalStatusSent = true;
-          unregisterWorker(jobId);
-          await updateJob(jobId, {
-            status: "completed",
-            progress: 100,
-            result: msg.result,
-            message: "Extraction completed",
-            error: null,
-          });
-        } else if (msg.type === "failed") {
-          terminalStatusSent = true;
-          unregisterWorker(jobId);
-          await updateJob(jobId, { status: "failed", error: msg.error });
-        }
-      } catch (dbError) {
-        logger.error("API:Extract", `Failed to update job ${jobId} from worker message`, dbError);
-      }
-    });
+    worker.on("message", createWorkerMessageHandler(jobId, lifecycle, deps));
 
     worker.on("error", (err) => {
       logger.error("API:Extract", `Worker error for job ${jobId}`, err);
-      if (!isJobCancelled(jobId) && !terminalStatusSent) {
-        terminalStatusSent = true;
+      if (!isJobCancelled(jobId) && !lifecycle.terminalStatusSent) {
+        lifecycle.terminalStatusSent = true;
         updateJob(jobId, { status: "failed", error: err.message }).catch((dbErr) => {
           logger.error("API:Extract", `Failed to update job ${jobId} on worker error`, dbErr);
         });
       }
     });
 
-    worker.on("exit", async (code) => {
-      unregisterWorker(jobId);
-      if (isJobCancelled(jobId) || terminalStatusSent) {
-        logger.info("API:Extract", `Worker exited for job ${jobId} (code ${code})`);
-        return;
-      }
-      const current = await getJob(jobId);
-      if (current && (current.status === "completed" || current.status === "failed")) {
-        logger.warn(
-          "API:Extract",
-          `Worker exited silently for job ${jobId} but job already ${current.status}; keeping DB state`,
-        );
-        return;
-      }
-      if (code !== 0) {
-        logger.error(
-          "API:Extract",
-          `Worker stopped with non-zero exit code ${code} for job ${jobId}`,
-        );
-        updateJob(jobId, {
-          status: "failed",
-          error: `Worker crashed unexpectedly (exit code ${code})`,
-        }).catch((dbErr) => {
-          logger.error("API:Extract", `Failed to mark job ${jobId} failed on exit`, dbErr);
-        });
-      } else {
-        logger.warn(
-          "API:Extract",
-          `Worker exited without reporting a result for job ${jobId} (last message: ${lastWorkerMessage})`,
-        );
-        updateJob(jobId, {
-          status: "failed",
-          error: `Worker finished without reporting a result (last message: ${lastWorkerMessage})`,
-        }).catch((dbErr) => {
-          logger.error("API:Extract", `Failed to mark job ${jobId} failed on silent exit`, dbErr);
-        });
-      }
+    worker.on("exit", (code) => {
+      createWorkerExitHandler(
+        jobId,
+        lifecycle,
+        deps,
+      )(code).catch((dbErr: unknown) => {
+        logger.error("API:Extract", `Failed to finalize job ${jobId} on exit`, dbErr);
+      });
     });
 
     return NextResponse.json({ success: true, jobId });
