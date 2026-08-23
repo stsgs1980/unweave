@@ -4,6 +4,7 @@
 
 import { parentPort, workerData } from "worker_threads";
 import { logger } from "@/lib/logger";
+import { deriveComponentName } from "@/lib/component-name";
 
 /**
  * @param level
@@ -53,6 +54,7 @@ async function run(): Promise<void> {
       url,
       {
         ...options,
+        component: options?.component || deriveComponentName(url),
         extractionPhases: options?.extractionPhases,
       },
       onProgress,

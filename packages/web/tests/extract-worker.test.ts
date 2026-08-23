@@ -66,6 +66,11 @@ describe("Web: extract-worker", () => {
     expect(nonLogMessages()).toEqual([
       { type: "completed", progress: 100, result: { success: true, extracted: {} } },
     ]);
+    expect(h.pipeline).toHaveBeenCalledWith(
+      "https://example.com",
+      expect.objectContaining({ component: "Example" }),
+      expect.any(Function),
+    );
   });
 
   it("posts failed message when pipeline reports unsuccessful result", async () => {
