@@ -10,6 +10,7 @@ export interface LogEntry {
   module: string;
   message: string;
   data?: any;
+  jobId?: string;
 }
 
 /**
@@ -48,6 +49,7 @@ export interface GetLogsOptions {
   limit?: number;
   level?: LogLevel | "all";
   module?: string;
+  jobId?: string;
 }
 
 /**
@@ -63,6 +65,9 @@ export function getLogs(options?: GetLogsOptions): LogEntry[] {
   if (options?.module) {
     const modLower = options.module.toLowerCase();
     logs = logs.filter((l) => l.module.toLowerCase().includes(modLower));
+  }
+  if (options?.jobId) {
+    logs = logs.filter((l) => l.jobId === options.jobId);
   }
   if (options?.limit && options.limit > 0) {
     logs = logs.slice(-options.limit);

@@ -56,4 +56,21 @@ describe("Web: Persistent Logger", () => {
     clearLogs();
     expect(getLogs().length).toBe(0);
   });
+
+  it("should filter logs by jobId", () => {
+    addLogEntry({
+      timestamp: new Date().toISOString(),
+      level: "info",
+      module: "Worker",
+      message: "job A line",
+      jobId: "job-a",
+    });
+    addLogEntry({
+      timestamp: new Date().toISOString(),
+      level: "info",
+      module: "Worker",
+      message: "no job line",
+    });
+    expect(getLogs({ jobId: "job-a" }).map((l) => l.message)).toEqual(["job A line"]);
+  });
 });

@@ -18,10 +18,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const moduleParam = searchParams.get("module");
 
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+    const jobIdParam = searchParams.get("jobId");
     const logs = getLogs({
       limit: Number.isNaN(limit) ? undefined : limit,
       level: levelParam || undefined,
       module: moduleParam || undefined,
+      jobId: jobIdParam || undefined,
     });
 
     return NextResponse.json(logs);
