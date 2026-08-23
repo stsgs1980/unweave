@@ -1,18 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { toast } from "sonner";
-import {
-  Copy,
-  Check,
-  Download,
-  Code2,
-  Eye,
-  Columns,
-  Loader2,
-  AlertCircle,
-  FileCode,
-} from "lucide-react";
+import { Copy, Check, Download, Code2, Loader2, AlertCircle, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreviewStage } from "./components/PreviewStage";
 import { PropsTable } from "./components/PropsTable";
@@ -25,8 +14,6 @@ interface CodePreviewProps {
   jobId: string | null;
 }
 
-type ViewMode = "split" | "preview" | "code";
-
 /**
  * Renders the code preview panel with live preview and generated code.
  * @param props - Component props
@@ -37,7 +24,6 @@ type ViewMode = "split" | "preview" | "code";
 export default function CodePreview({ componentName, jobId }: CodePreviewProps) {
   const {
     files,
-    spec,
     activeTab,
     setActiveTab,
     viewMode,
