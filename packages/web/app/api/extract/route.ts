@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createJob, updateJob } from "@/lib/jobStore";
 import { logger, addLogEntry } from "@/lib/logger";
+import { resolveStage } from "@/lib/pipeline-stages";
 import { randomUUID } from "crypto";
 import { Worker } from "worker_threads";
 
@@ -33,16 +34,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
     logger.info("API:Extract", `Worker spawned for job ID ${jobId}`);
 
+    let stages: Array<{ stage: string; at: string }> = [];
     // Listen to worker messages and update DB
     worker.on("message", async (msg: any) => {
       try {
         if (msg.type === "log" && msg.entry) {
-          addLogEntry(msg.entry);
+          addLogEntry({ ...msg.entry, jobId });
         } else if (msg.type === "progress") {
+          const stage = resolveStage(msg.message ?? "");
+          if (stage && (stages.length === 0 || stages[stages.length - 1].stage !== stage)) {
+            stages = [...stages, { stage, at: new Date().toISOString() }];
+          }
           await updateJob(jobId, {
             status: "processing",
             progress: msg.progress,
             message: msg.message,
+            ...(stages.length > 0 ? { stages } : {}),
           });
         } else if (msg.type === "completed") {
           await updateJob(jobId, {
