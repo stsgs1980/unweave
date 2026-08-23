@@ -22,6 +22,20 @@ function pass(message) {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   page.setDefaultTimeout(TIMEOUT_MS);
+  const seenStages = [];
+
+  page.on("response", async (response) => {
+    if (!response.url().includes("/api/status/")) return;
+    try {
+      const data = await response.json();
+      if (Array.isArray(data.stages)) {
+        seenStages.length = 0;
+        seenStages.push(...data.stages.map((s) => s.stage));
+      }
+    } catch {
+      /* status snapshots may be consumed elsewhere; ignore parse races */
+    }
+  });
 
   try {
     await page.goto(BASE, { waitUntil: "domcontentloaded" });
@@ -54,6 +68,13 @@ function pass(message) {
 
     await page.getByText("Extraction Complete!").waitFor({ timeout: TIMEOUT_MS });
     pass("auto-transitioned to result step after completion");
+
+    const expected = ["extract", "analyze", "spec", "generate"];
+    if (expected.every((key, i) => seenStages[i] === key) && seenStages.length === 4) {
+      pass(`pipeline recorded all four stages in order: ${seenStages.join(" -> ")}`);
+    } else {
+      fail(`stages timeline incomplete: [${seenStages.join(", ")}]`);
+    }
 
     const summary = await page.locator("text=/Extract \\d+ms/").count();
     if (summary > 0) pass("timing summary line was rendered");
