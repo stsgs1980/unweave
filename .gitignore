@@ -24,6 +24,10 @@ Thumbs.db
 # Neon config (contains provider-specific settings)
 .neon
 
+# Local databases (runtime artifacts, recreated via prisma db push)
+*.db
+*.db-journal
+
 # Logs
 *.log
 npm-debug.log*
