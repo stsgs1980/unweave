@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createJob, updateJob } from "@/lib/jobStore";
 import { logger, addLogEntry } from "@/lib/logger";
 import { resolveStage } from "@/lib/pipeline-stages";
+import { saveJobScreenshots } from "@/lib/screenshot-store";
 import { randomUUID } from "crypto";
 import { Worker } from "worker_threads";
 
@@ -52,6 +53,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             ...(stages.length > 0 ? { stages } : {}),
           });
         } else if (msg.type === "completed") {
+          try {
+            const saved = await saveJobScreenshots(jobId, msg.result?.extracted?.screenshots);
+            if (saved.length > 0) {
+              logger.info("API:Extract", `Saved ${saved.length} screenshot(s) for job ${jobId}`);
+            }
+          } catch (saveError) {
+            logger.warn("API:Extract", `Failed to save screenshots for job ${jobId}`, saveError);
+          }
           await updateJob(jobId, {
             status: "completed",
             progress: 100,

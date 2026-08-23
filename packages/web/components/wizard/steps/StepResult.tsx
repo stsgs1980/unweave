@@ -1,15 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useWizardStore } from "@/store/wizard-store";
 import { CheckCircle2, Layers, Palette, RefreshCw } from "lucide-react";
 
+const SCREENSHOT_LABELS: Record<string, string> = {
+  full: "Full page",
+  viewport: "Viewport",
+  mobile: "Mobile",
+};
+
 /**
- * StepResult: Shows completion message with deep-links to Workspace Studio and Tokens View.
+ * StepResult: Shows completion message with screenshots and deep-links to Workspace Studio and Tokens View.
+ * @returns The rendered result step content.
  */
 export default function StepResult() {
   const { reset, jobId, close } = useWizardStore();
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let cancelled = false;
+    fetch(`/api/screenshots/${jobId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((names: string[]) => {
+        if (!cancelled) setScreenshots(names);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId]);
 
   const handleNewExtraction = () => {
     reset();
@@ -29,6 +51,33 @@ export default function StepResult() {
           Components and design tokens saved to database and ready for inspection.
         </p>
       </div>
+
+      {screenshots.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Captured screenshots</p>
+          <div className="flex flex-wrap items-start justify-center gap-3">
+            {screenshots.map((name) => (
+              <a
+                key={name}
+                href={`/api/screenshots/${jobId}/${name}.png`}
+                target="_blank"
+                rel="noreferrer"
+                className="group block w-40"
+                title={`Open ${SCREENSHOT_LABELS[name] ?? name} screenshot`}
+              >
+                <img
+                  src={`/api/screenshots/${jobId}/${name}.png`}
+                  alt={`${SCREENSHOT_LABELS[name] ?? name} screenshot`}
+                  className="h-24 w-40 rounded-lg border border-border object-cover object-top transition-opacity group-hover:opacity-80"
+                />
+                <span className="mt-1 block text-[10px] text-muted-foreground group-hover:text-foreground">
+                  {SCREENSHOT_LABELS[name] ?? name}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
         <Link
