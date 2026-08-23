@@ -59,11 +59,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const result = job.result as {
         analysis?: {
           components?: unknown[];
-          designSystem?: { colors?: unknown[] };
+          designSystem?: { colors?: { all?: unknown[] } | unknown[] };
         };
       } | null;
       const components = result?.analysis?.components;
       const colors = result?.analysis?.designSystem?.colors;
+      const colorCount = Array.isArray(colors)
+        ? colors.length
+        : Array.isArray(colors?.all)
+          ? colors.all.length
+          : 0;
       return {
         id: job.id,
         name: getHostOrName(job.url),
@@ -74,7 +79,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         message: job.message,
         error: job.error,
         componentCount: components?.length ?? 0,
-        tokenCount: colors?.length ?? 0,
+        tokenCount: colorCount,
       };
     });
 

@@ -13,7 +13,7 @@ export interface Job {
   progress: number;
   message?: string;
   result?: any;
-  error?: string;
+  error?: string | null;
 }
 
 const emitter = new EventEmitter();

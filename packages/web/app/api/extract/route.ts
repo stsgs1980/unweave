@@ -3,7 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createJob, updateJob } from "@/lib/jobStore";
+import { createJob, updateJob, getJob } from "@/lib/jobStore";
 import { logger, addLogEntry } from "@/lib/logger";
 import { resolveStage } from "@/lib/pipeline-stages";
 import { saveJobScreenshots } from "@/lib/screenshot-store";
@@ -49,9 +49,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     let stages: Array<{ stage: string; at: string }> = [];
     let terminalStatusSent = false;
+    let lastWorkerMessage = "none";
     // Listen to worker messages and update DB
     worker.on("message", async (msg: any) => {
       try {
+        lastWorkerMessage = `${msg.type}${msg.type === "progress" ? ` ${msg.progress}%` : ""}`;
         if (isJobCancelled(jobId)) {
           logger.info(
             "API:Extract",
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             progress: 100,
             result: msg.result,
             message: "Extraction completed",
+            error: null,
           });
         } else if (msg.type === "failed") {
           terminalStatusSent = true;
@@ -109,10 +112,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     });
 
-    worker.on("exit", (code) => {
+    worker.on("exit", async (code) => {
       unregisterWorker(jobId);
       if (isJobCancelled(jobId) || terminalStatusSent) {
         logger.info("API:Extract", `Worker exited for job ${jobId} (code ${code})`);
+        return;
+      }
+      const current = await getJob(jobId);
+      if (current && (current.status === "completed" || current.status === "failed")) {
+        logger.warn(
+          "API:Extract",
+          `Worker exited silently for job ${jobId} but job already ${current.status}; keeping DB state`,
+        );
         return;
       }
       if (code !== 0) {
@@ -127,10 +138,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           logger.error("API:Extract", `Failed to mark job ${jobId} failed on exit`, dbErr);
         });
       } else {
-        logger.warn("API:Extract", `Worker exited without reporting a result for job ${jobId}`);
+        logger.warn(
+          "API:Extract",
+          `Worker exited without reporting a result for job ${jobId} (last message: ${lastWorkerMessage})`,
+        );
         updateJob(jobId, {
           status: "failed",
-          error: "Worker finished without reporting a result",
+          error: `Worker finished without reporting a result (last message: ${lastWorkerMessage})`,
         }).catch((dbErr) => {
           logger.error("API:Extract", `Failed to mark job ${jobId} failed on silent exit`, dbErr);
         });
