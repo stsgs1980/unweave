@@ -27,6 +27,7 @@ interface Reference {
 export default function ReferencesGrid() {
   const [references, setReferences] = useState<Reference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const fetchReferences = async (): Promise<void> => {
@@ -35,9 +36,12 @@ export default function ReferencesGrid() {
         if (response.ok) {
           const data = await response.json();
           setReferences(data);
+        } else {
+          setLoadError(true);
         }
       } catch (error) {
         console.error("[FAIL] Failed to load references:", error);
+        setLoadError(true);
       } finally {
         setIsLoading(false);
       }
@@ -48,6 +52,16 @@ export default function ReferencesGrid() {
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading references...</p>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-lg border border-destructive/40 bg-destructive/5">
+        <p className="text-sm text-destructive">
+          Failed to load references. Check that the server is running and try again.
+        </p>
+      </div>
+    );
   }
 
   if (references.length === 0) {

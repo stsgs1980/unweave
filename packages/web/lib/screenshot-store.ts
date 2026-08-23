@@ -62,6 +62,7 @@ export async function listJobScreenshots(
   jobId: string,
   baseDir: string = DEFAULT_BASE_DIR,
 ): Promise<string[]> {
+  if (!isSafeScreenshotName(jobId)) return [];
   const dir = jobDir(jobId, baseDir);
   if (!existsSync(dir)) return [];
   const files = await readdir(dir);

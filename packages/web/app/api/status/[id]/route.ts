@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJob, updateJob } from "@/lib/jobStore";
 import { logger } from "@/lib/logger";
+import { terminateWorker, markJobCancelled, isJobCancelled } from "@/lib/worker-registry";
 
 /**
  * Handles GET requests to retrieve job status.
@@ -56,8 +57,20 @@ export async function DELETE(
     }
 
     if (job.status === "completed" || job.status === "failed") {
+      if (isJobCancelled(id)) {
+        logger.info("API:Status", `Job ${id} was already cancelled`);
+        return NextResponse.json({ success: true, job });
+      }
       logger.warn("API:Status", `Cannot cancel job ${id} with status: ${job.status}`);
       return NextResponse.json({ error: "[FAIL] Job already finished" }, { status: 400 });
+    }
+
+    markJobCancelled(id);
+    const terminated = await terminateWorker(id);
+    if (terminated) {
+      logger.info("API:Status", `Worker thread for job ${id} terminated`);
+    } else {
+      logger.warn("API:Status", `No running worker found for job ${id}`);
     }
 
     const cancelledJob = await updateJob(id, {

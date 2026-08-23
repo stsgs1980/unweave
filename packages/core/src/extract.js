@@ -53,7 +53,11 @@ export async function extract(url, options = {}) {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     if (options.waitFor) {
-      await page.waitForSelector(options.waitFor, { timeout: 10000 }).catch(() => {});
+      await page.waitForSelector(options.waitFor, { timeout: 10000 }).catch((e) => {
+        const message = `waitFor selector "${options.waitFor}" not found within 10s`;
+        console.warn(`[extract] ${message}:`, e.message);
+        warnings.push(message);
+      });
     }
 
     // Extract data in multiple smaller evaluations to avoid "Target crashed"
@@ -61,6 +65,7 @@ export async function extract(url, options = {}) {
     let pageMeta = { url: "", title: "", meta: {} };
     let elements = [];
     let images = [];
+    const warnings = [];
 
     // 1. CSS Variables (lightweight)
     if (extractionPhases.cssVariables) {
@@ -68,6 +73,7 @@ export async function extract(url, options = {}) {
         cssVariables = await extractCSSVariables(page);
       } catch (e) {
         console.warn("[extract] CSS variables extraction failed:", e.message);
+        warnings.push(`cssVariables phase failed: ${e.message}`);
       }
     }
 
@@ -77,6 +83,7 @@ export async function extract(url, options = {}) {
         pageMeta = await extractPageMeta(page);
       } catch (e) {
         console.warn("[extract] Page meta extraction failed:", e.message);
+        warnings.push(`pageMeta phase failed: ${e.message}`);
       }
     }
 
@@ -86,12 +93,14 @@ export async function extract(url, options = {}) {
         elements = await extractElements(page, maxElements);
       } catch (e) {
         console.warn("[extract] Elements extraction failed:", e.message);
+        warnings.push(`elements phase failed: ${e.message}`);
         // Fallback: try with fewer elements
         if (maxElements > 50) {
           try {
             elements = await extractElements(page, 50);
           } catch (e2) {
             console.error("[extract] Elements extraction failed even with limit:", e2.message);
+            warnings.push(`elements fallback (limit 50) also failed: ${e2.message}`);
           }
         }
       }
@@ -103,6 +112,7 @@ export async function extract(url, options = {}) {
         images = await extractImages(page);
       } catch (e) {
         console.warn("[extract] Images extraction failed:", e.message);
+        warnings.push(`images phase failed: ${e.message}`);
       }
     }
 
@@ -111,6 +121,7 @@ export async function extract(url, options = {}) {
       cssVariables,
       elements,
       images,
+      warnings,
     };
 
     // Screenshots if requested
@@ -146,6 +157,7 @@ export async function extract(url, options = {}) {
           }
         } catch (e) {
           console.warn(`[extract] Screenshot "${type}" failed:`, e.message);
+          warnings.push(`screenshot "${type}" failed: ${e.message}`);
           // Don't throw - preserve other screenshots and extracted data
         }
       }

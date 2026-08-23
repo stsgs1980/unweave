@@ -7,6 +7,14 @@ import { createJob, updateJob } from "@/lib/jobStore";
 import { logger, addLogEntry } from "@/lib/logger";
 import { resolveStage } from "@/lib/pipeline-stages";
 import { saveJobScreenshots } from "@/lib/screenshot-store";
+import {
+  registerWorker,
+  terminateWorker,
+  unregisterWorker,
+  markJobCancelled,
+  isJobCancelled,
+} from "@/lib/worker-registry";
+import { isAllowedExtractionUrl } from "@/lib/validate-url";
 import { randomUUID } from "crypto";
 import { Worker } from "worker_threads";
 
@@ -21,9 +29,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json();
     const { url, options } = body;
 
-    if (!url || typeof url !== "string") {
-      logger.warn("API:Extract", "Invalid or missing URL in request", { body });
-      return NextResponse.json({ error: "[FAIL] URL is required" }, { status: 400 });
+    if (!url || typeof url !== "string" || !isAllowedExtractionUrl(url)) {
+      logger.warn("API:Extract", "Invalid or disallowed URL in request", { body });
+      return NextResponse.json(
+        { error: "[FAIL] URL must be a public http(s) address" },
+        { status: 400 },
+      );
     }
 
     const jobId = randomUUID();
@@ -34,11 +45,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       workerData: { url, options: options || {} },
     });
     logger.info("API:Extract", `Worker spawned for job ID ${jobId}`);
+    registerWorker(jobId, worker);
 
     let stages: Array<{ stage: string; at: string }> = [];
+    let terminalStatusSent = false;
     // Listen to worker messages and update DB
     worker.on("message", async (msg: any) => {
       try {
+        if (isJobCancelled(jobId)) {
+          logger.info(
+            "API:Extract",
+            `Dropping late ${msg.type} message for cancelled job ${jobId}`,
+          );
+          return;
+        }
         if (msg.type === "log" && msg.entry) {
           addLogEntry({ ...msg.entry, jobId });
         } else if (msg.type === "progress") {
@@ -61,6 +81,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           } catch (saveError) {
             logger.warn("API:Extract", `Failed to save screenshots for job ${jobId}`, saveError);
           }
+          terminalStatusSent = true;
+          unregisterWorker(jobId);
           await updateJob(jobId, {
             status: "completed",
             progress: 100,
@@ -68,6 +90,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             message: "Extraction completed",
           });
         } else if (msg.type === "failed") {
+          terminalStatusSent = true;
+          unregisterWorker(jobId);
           await updateJob(jobId, { status: "failed", error: msg.error });
         }
       } catch (dbError) {
@@ -77,19 +101,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     worker.on("error", (err) => {
       logger.error("API:Extract", `Worker error for job ${jobId}`, err);
-      updateJob(jobId, { status: "failed", error: err.message }).catch((dbErr) => {
-        logger.error("API:Extract", `Failed to update job ${jobId} on worker error`, dbErr);
-      });
+      if (!isJobCancelled(jobId) && !terminalStatusSent) {
+        terminalStatusSent = true;
+        updateJob(jobId, { status: "failed", error: err.message }).catch((dbErr) => {
+          logger.error("API:Extract", `Failed to update job ${jobId} on worker error`, dbErr);
+        });
+      }
     });
 
     worker.on("exit", (code) => {
+      unregisterWorker(jobId);
+      if (isJobCancelled(jobId) || terminalStatusSent) {
+        logger.info("API:Extract", `Worker exited for job ${jobId} (code ${code})`);
+        return;
+      }
       if (code !== 0) {
         logger.error(
           "API:Extract",
           `Worker stopped with non-zero exit code ${code} for job ${jobId}`,
         );
+        updateJob(jobId, {
+          status: "failed",
+          error: `Worker crashed unexpectedly (exit code ${code})`,
+        }).catch((dbErr) => {
+          logger.error("API:Extract", `Failed to mark job ${jobId} failed on exit`, dbErr);
+        });
       } else {
-        logger.info("API:Extract", `Worker exited successfully for job ${jobId}`);
+        logger.warn("API:Extract", `Worker exited without reporting a result for job ${jobId}`);
+        updateJob(jobId, {
+          status: "failed",
+          error: "Worker finished without reporting a result",
+        }).catch((dbErr) => {
+          logger.error("API:Extract", `Failed to mark job ${jobId} failed on silent exit`, dbErr);
+        });
       }
     });
 

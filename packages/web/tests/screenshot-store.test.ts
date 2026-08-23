@@ -43,6 +43,11 @@ describe("Web: screenshot-store", () => {
     expect(isSafeScreenshotName("a/b")).toBe(false);
   });
 
+  it("refuses traversal jobIds when listing", async () => {
+    expect(await listJobScreenshots("../..", baseDir)).toEqual([]);
+    expect(await listJobScreenshots("a/b", baseDir)).toEqual([]);
+  });
+
   it("accepts plain Uint8Array (postMessage strips Buffer class)", async () => {
     const saved = await saveJobScreenshots("job-2", { full: new Uint8Array(png) }, baseDir);
     expect(saved).toEqual(["full"]);

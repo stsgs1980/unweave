@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWizardStore } from "@/store/wizard-store";
 import { Loader2, XCircle } from "lucide-react";
 import { StageKey, StageRecord } from "@/lib/pipeline-stages";
 import StageStepper from "@/components/wizard/steps/StageStepper";
 import WorkerLogPanel from "@/components/wizard/steps/WorkerLogPanel";
+import { useExtractMutation } from "@/components/wizard/steps/useExtractMutation";
 
 /**
  * @file StepProgress component: live extraction stepper, job-scoped log panel,
@@ -28,20 +28,7 @@ interface StatusPayload {
  * @returns The rendered step content.
  */
 export default function StepProgress() {
-  const {
-    url,
-    viewport,
-    componentFocus,
-    screenshots,
-    format,
-    extraOptions,
-    selectedElements,
-    extractionPhases,
-    jobId,
-    setJobId,
-    setStep,
-    reset: resetWizard,
-  } = useWizardStore();
+  const { url, jobId, setJobId, setStep, reset: resetWizard } = useWizardStore();
 
   const [progress, setProgress] = useState(10);
   const [message, setMessage] = useState("Initializing extraction worker...");
@@ -53,51 +40,10 @@ export default function StepProgress() {
   const [showLog, setShowLog] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const lastStartedUrlRef = useRef<string | null>(null);
   const transitionedRef = useRef(false);
+  const consecutiveErrorsRef = useRef(0);
 
-  const {
-    mutate,
-    reset,
-    data: jobIdFromMutation,
-  } = useMutation({
-    mutationFn: async (targetUrl: string) => {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: targetUrl,
-          options: {
-            viewport,
-            componentFocus,
-            screenshots,
-            format,
-            extraOptions,
-            selectedElements,
-            extractionPhases,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.jobId) throw new Error(data.error || "Failed to start extraction");
-      return data.jobId as string;
-    },
-    onSuccess: (id) => setJobId(id),
-    onError: (error: Error) => {
-      toast.error(error.message);
-      setStep(1);
-    },
-  });
-
-  useEffect(() => {
-    reset();
-  }, [url, reset]);
-
-  useEffect(() => {
-    if (!url || lastStartedUrlRef.current === url) return;
-    lastStartedUrlRef.current = url;
-    mutate(url);
-  }, [url, mutate]);
+  const jobIdFromMutation = useExtractMutation();
 
   const activeJobId = jobId ?? jobIdFromMutation;
 
@@ -109,7 +55,17 @@ export default function StepProgress() {
     const tick = async () => {
       try {
         const statusRes = await fetch(`/api/status/${activeJobId}`, { signal: controller.signal });
-        if (!statusRes.ok) return;
+        if (!statusRes.ok) {
+          consecutiveErrorsRef.current += 1;
+          if (consecutiveErrorsRef.current >= 5) {
+            clearInterval(interval);
+            controller.abort();
+            toast.error("Lost connection to the extraction server");
+            setSummary("Failed: lost connection to the extraction server");
+          }
+          return;
+        }
+        consecutiveErrorsRef.current = 0;
         const s: StatusPayload = await statusRes.json();
         if (s.progress) setProgress(s.progress);
         if (s.message) setMessage(s.message);
@@ -186,7 +142,10 @@ export default function StepProgress() {
     setIsCancelling(true);
     try {
       abortControllerRef.current?.abort();
-      await fetch(`/api/status/${activeJobId}`, { method: "DELETE" });
+      const cancelRes = await fetch(`/api/status/${activeJobId}`, { method: "DELETE" });
+      if (!cancelRes.ok) {
+        throw new Error(`Cancel request failed (HTTP ${cancelRes.status})`);
+      }
       toast.info("Extraction cancelled");
       resetWizard();
       setStep(1);

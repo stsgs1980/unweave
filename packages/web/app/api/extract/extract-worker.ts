@@ -62,6 +62,10 @@ async function run(): Promise<void> {
     const result = results[0];
 
     if (result.success) {
+      const warnings = Array.isArray(result.extracted?.warnings) ? result.extracted.warnings : [];
+      for (const warning of warnings) {
+        sendWorkerLog("warn", warning);
+      }
       sendWorkerLog("info", "Pipeline completed successfully");
       parentPort.postMessage({ type: "completed", progress: 100, result });
     } else {
