@@ -1,5 +1,11 @@
 packages:
   - "packages/*"
+virtualStoreDirMaxLength: 120
+hoistPattern:
+  - "*"
+publicHoistPattern:
+  - "*eslint*"
+  - "*prettier*"
 allowBuilds:
   "@prisma/client": true
   "@prisma/engines": false

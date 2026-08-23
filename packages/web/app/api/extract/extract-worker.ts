@@ -41,9 +41,6 @@ async function run(): Promise<void> {
   sendWorkerLog("info", `Worker started for URL: ${url}`, { options });
 
   try {
-    parentPort.postMessage({ type: "progress", progress: 10, message: "Starting pipeline..." });
-    sendWorkerLog("info", "Pipeline set to processing (10%)");
-
     const { pipeline } = await import("@unweave/core/pipeline");
 
     const onProgress = (progress: number, message: string) => {

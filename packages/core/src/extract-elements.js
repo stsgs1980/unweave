@@ -3,7 +3,7 @@
  */
 
 import { chromium } from "playwright";
-import { isVisibleElement, SKIP_TAGS } from "./extract-visibility.js";
+import { SKIP_TAGS } from "./extract-visibility.js";
 import { RELEVANT_CSS_PROPERTIES } from "./extract-css.js";
 
 /**
@@ -34,11 +34,40 @@ export async function extractPageMeta(page) {
  */
 export async function extractElements(page, maxElements = 500) {
   return page.evaluate(
-    (limit) => {
+    ({ limit, relevantProps, skipTags }) => {
+      const isVisible = (el, styles) => {
+        const tagName = el.tagName.toLowerCase();
+
+        if (skipTags.includes(tagName)) {
+          return false;
+        }
+
+        const display = styles.getPropertyValue("display");
+        const visibility = styles.getPropertyValue("visibility");
+        const opacity = styles.getPropertyValue("opacity");
+
+        if (display === "none" || visibility === "hidden" || opacity === "0" || opacity === "0.0") {
+          return false;
+        }
+
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          return false;
+        }
+
+        const width = styles.getPropertyValue("width");
+        const height = styles.getPropertyValue("height");
+        if ((width === "0px" || width === "0") && (height === "0px" || height === "0")) {
+          return false;
+        }
+
+        return true;
+      };
+
       const getComputedStyles = (element) => {
         const styles = window.getComputedStyle(element);
         const result = {};
-        for (const prop of RELEVANT_CSS_PROPERTIES) {
+        for (const prop of relevantProps) {
           const value = styles.getPropertyValue(prop);
           if (
             value &&
@@ -60,7 +89,7 @@ export async function extractElements(page, maxElements = 500) {
 
       for (const el of allElements) {
         const styles = window.getComputedStyle(el);
-        if (isVisibleElement(el, styles)) {
+        if (isVisible(el, styles)) {
           visibleElements.push(el);
           if (visibleElements.length >= limit) break;
         }
@@ -92,138 +121,6 @@ export async function extractElements(page, maxElements = 500) {
         };
       });
     },
-    maxElements,
-    { timeout: 30000 },
+    { limit: maxElements, relevantProps: RELEVANT_CSS_PROPERTIES, skipTags: SKIP_TAGS },
   );
-}
-
-/**
- *
- * @param element
- */
-function getComputedStyles(element) {
-  const styles = window.getComputedStyle(element);
-  const result = {};
-  for (const prop of [
-    "display",
-    "position",
-    "top",
-    "right",
-    "bottom",
-    "left",
-    "z-index",
-    "flex",
-    "flex-direction",
-    "flex-wrap",
-    "flex-grow",
-    "flex-shrink",
-    "flex-basis",
-    "justify-content",
-    "align-items",
-    "align-content",
-    "gap",
-    "grid",
-    "grid-template-columns",
-    "grid-template-rows",
-    "grid-gap",
-    "float",
-    "clear",
-    "width",
-    "height",
-    "min-width",
-    "min-height",
-    "max-width",
-    "max-height",
-    "margin",
-    "margin-top",
-    "margin-right",
-    "margin-bottom",
-    "margin-left",
-    "padding",
-    "padding-top",
-    "padding-right",
-    "padding-bottom",
-    "padding-left",
-    "box-sizing",
-    "overflow",
-    "overflow-x",
-    "overflow-y",
-    "border",
-    "border-width",
-    "border-style",
-    "border-color",
-    "border-top",
-    "border-right",
-    "border-bottom",
-    "border-left",
-    "border-radius",
-    "border-top-left-radius",
-    "border-top-right-radius",
-    "border-bottom-right-radius",
-    "border-bottom-left-radius",
-    "background",
-    "background-color",
-    "background-image",
-    "background-size",
-    "background-position",
-    "background-repeat",
-    "background-origin",
-    "background-clip",
-    "color",
-    "font",
-    "font-family",
-    "font-size",
-    "font-weight",
-    "font-style",
-    "font-variant",
-    "line-height",
-    "letter-spacing",
-    "text-align",
-    "text-decoration",
-    "text-transform",
-    "white-space",
-    "word-wrap",
-    "word-break",
-    "overflow-wrap",
-    "text-overflow",
-    "vertical-align",
-    "opacity",
-    "visibility",
-    "filter",
-    "backdrop-filter",
-    "mix-blend-mode",
-    "box-shadow",
-    "text-shadow",
-    "transition",
-    "transition-property",
-    "transition-duration",
-    "transition-timing-function",
-    "transition-delay",
-    "animation",
-    "animation-name",
-    "animation-duration",
-    "animation-timing-function",
-    "animation-delay",
-    "cursor",
-    "pointer-events",
-    "user-select",
-    "fill",
-    "stroke",
-    "stroke-width",
-    "stroke-linecap",
-    "stroke-linejoin",
-  ]) {
-    const value = styles.getPropertyValue(prop);
-    if (
-      value &&
-      value !== "none" &&
-      value !== "0px" &&
-      value !== "0" &&
-      value !== "normal" &&
-      value !== "auto"
-    ) {
-      result[prop] = value;
-    }
-  }
-  return result;
 }

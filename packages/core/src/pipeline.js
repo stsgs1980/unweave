@@ -54,6 +54,10 @@ export async function pipeline(urls, options = {}, onProgress) {
       const analyzeTime = Date.now() - analyzeStart;
       console.log(`[pipeline] Analyze completed in ${analyzeTime}ms`);
 
+      let specTime = 0;
+      let generateTime = 0;
+      let refTime = 0;
+
       // Step 3: Generate spec (if component specified)
       let spec = null;
       if (options.component) {

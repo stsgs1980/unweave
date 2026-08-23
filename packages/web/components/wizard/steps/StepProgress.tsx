@@ -29,6 +29,7 @@ export default function StepProgress() {
   const [message, setMessage] = useState("Initializing extraction worker...");
   const [isCancelling, setIsCancelling] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastStartedUrlRef = useRef<string | null>(null);
 
   const {
     mutate,
@@ -92,9 +93,9 @@ export default function StepProgress() {
   }, [url, reset]);
 
   useEffect(() => {
-    if (url) {
-      mutate(url);
-    }
+    if (!url || lastStartedUrlRef.current === url) return;
+    lastStartedUrlRef.current = url;
+    mutate(url);
   }, [url, mutate]);
 
   useEffect(() => {

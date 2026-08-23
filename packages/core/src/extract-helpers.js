@@ -7,10 +7,8 @@ export {
   EXTRACTION_LIMITS,
   extractCSSVariables,
   RELEVANT_CSS_PROPERTIES,
-  SKIP_TAGS,
-  isVisibleElement,
 } from "./extract-css.js";
 
-export { extractPageMeta, extractElements, extractImages } from "./extract-dom.js";
-
-export { normalizeViewport, EXTRACTION_LIMITS } from "./extract-css.js";
+export { extractPageMeta, extractElements } from "./extract-dom.js";
+export { extractImages } from "./extract-images.js";
+export { SKIP_TAGS, isVisibleElement } from "./extract-visibility.js";
