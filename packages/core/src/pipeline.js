@@ -12,6 +12,7 @@ import { diffDesignSystems, diffComponents, diffPatterns } from "./diff.js";
  * @param {Object} options - Pipeline options
  * @param {boolean} [options.screenshot] - Take screenshot
  * @param {string[]} [options.screenshotTypes] - Screenshot types
+ * @param {Object} [options.screenshots] - Screenshot configuration object (fullPage/viewport/mobile/sections)
  * @param {Object} [options.viewport] - Viewport settings
  * @param {number} [options.waitFor] - Wait time in ms
  * @param {string} [options.component] - Component name
@@ -39,6 +40,7 @@ export async function pipeline(urls, options = {}, onProgress) {
       const extracted = await extract(url, {
         screenshot: options.screenshot,
         screenshotTypes: options.screenshotTypes,
+        screenshots: options.screenshots,
         viewport: options.viewport,
         waitFor: options.waitFor,
         extractionPhases: options.extractionPhases,
@@ -69,7 +71,7 @@ export async function pipeline(urls, options = {}, onProgress) {
           componentType: options.componentType || inferComponentType(options.component),
           source: url,
         });
-        const specTime = Date.now() - specStart;
+        specTime = Date.now() - specStart;
         console.log(`[pipeline] Spec generated in ${specTime}ms`);
       }
 
@@ -83,7 +85,7 @@ export async function pipeline(urls, options = {}, onProgress) {
           format: options.format,
           typescript: options.typescript,
         });
-        const generateTime = Date.now() - generateStart;
+        generateTime = Date.now() - generateStart;
         console.log(`[pipeline] Code generated in ${generateTime}ms`);
       }
 
@@ -100,7 +102,7 @@ export async function pipeline(urls, options = {}, onProgress) {
           generated,
           timestamp: new Date().toISOString(),
         });
-        const refTime = Date.now() - refStart;
+        refTime = Date.now() - refStart;
         console.log(`[pipeline] Reference saved in ${refTime}ms`);
       }
 
