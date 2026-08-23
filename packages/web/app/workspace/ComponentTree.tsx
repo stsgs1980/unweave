@@ -33,9 +33,10 @@ interface ComponentTreeProps {
 
 // Helper to determine appropriate icon based on component name / type
 /**
- *
- * @param name
- * @param type
+ * Picks a lucide icon matching the component type or name.
+ * @param {string} name - Display name of the component.
+ * @param {string | undefined} type - Semantic component type.
+ * @returns The icon component.
  */
 function getComponentIcon(name: string, type?: string) {
   const norm = (type || name || "").toLowerCase();
@@ -64,19 +65,15 @@ function getComponentIcon(name: string, type?: string) {
   return Box;
 }
 
-// Calculate or estimate variants count for each component
+// Real variant count produced by the analyzer (distinct style signatures)
 /**
- *
- * @param comp
+ * Returns the number of real visual variants detected by the analyzer.
+ * @param comp - Analyzed component with optional variants array.
+ * @returns Variant count (at least 1).
  */
 function getVariantCount(comp: any): number {
-  if (comp.variants?.length) return comp.variants.length;
-  const lower = (comp.name || comp.tagName || "").toLowerCase();
-  if (lower.includes("btn") || lower.includes("button")) return 4;
-  if (lower.includes("card")) return 3;
-  if (lower.includes("input")) return 3;
-  if (lower.includes("nav") || lower.includes("modal")) return 2;
-  return 2;
+  if (Array.isArray(comp.variants) && comp.variants.length > 0) return comp.variants.length;
+  return 1;
 }
 
 // Tags that shouldn't clutter the list unless they have explicit class names
@@ -84,10 +81,11 @@ const GENERIC_TAGS = ["div", "span", "p", "ul", "li", "a", "br", "hr", "img", "s
 
 /**
  * Renders a searchable list of components with icons and variant count badges.
- * @param root0
- * @param root0.components
- * @param root0.onSelect
- * @param root0.selectedComponent
+ * @param root0 - Component props.
+ * @param root0.components - Analyzed components from the extraction result.
+ * @param root0.onSelect - Callback fired with the component name on click.
+ * @param root0.selectedComponent - Currently selected component name.
+ * @returns The rendered component tree.
  */
 export default function ComponentTree({
   components,
